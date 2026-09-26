@@ -1,0 +1,169 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Color Palette - Tactile Modern Fintech */
+  --surface-canvas: #F8FAFC;
+  --surface-card: #FFFFFF;
+  --surface-dim: #E2E8F0;
+  
+  --profit-emerald: #059669;
+  --profit-emerald-tint: #ECFDF5;
+  --profit-emerald-border: #A7F3D0;
+  --profit-emerald-dark: #065F46;
+  --profit-emerald-glow: rgba(5, 150, 105, 0.15);
+
+  --expense-rose: #E11D48;
+  --expense-rose-tint: #FFF1F2;
+  --expense-rose-border: #FECDD3;
+  --expense-rose-dark: #9F1239;
+  --expense-rose-glow: rgba(225, 29, 72, 0.15);
+
+  --tertiary-blue: #0284C7;
+  --tertiary-tint: #E0F2FE;
+
+  --slate-display: #0F172A;
+  --slate-body: #334155;
+  --slate-muted: #64748B;
+  --slate-border: #E2E8F0;
+  --slate-subtle: #F1F5F9;
+
+  /* Typography */
+  --font-display: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+
+  /* Elevation Shadows */
+  --shadow-level-1: 0 1px 3px 0 rgba(15, 23, 42, 0.05), 0 1px 2px -1px rgba(15, 23, 42, 0.05);
+  --shadow-level-2: 0 4px 12px -2px rgba(15, 23, 42, 0.08), 0 2px 6px -2px rgba(15, 23, 42, 0.04);
+  --shadow-level-3: 0 -4px 16px -4px rgba(15, 23, 42, 0.06), 0 4px 16px -4px rgba(15, 23, 42, 0.06);
+  --shadow-profit: 0 8px 24px -4px rgba(5, 150, 105, 0.18);
+  --shadow-loss: 0 8px 24px -4px rgba(225, 29, 72, 0.18);
+
+  /* Radii */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+  --radius-full: 9999px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--surface-canvas);
+  color: var(--slate-body);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+h1, h2, h3, h4, h5, h6, .font-display {
+  font-family: var(--font-display);
+  color: var(--slate-display);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Touch-optimized button reset */
+button {
+  font-family: var(--font-display);
+  cursor: pointer;
+  border: none;
+  background: none;
+  outline: none;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+button:active {
+  transform: scale(0.98);
+}
+
+/* Custom modern scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
+
+/* Tactile Utility Classes */
+.card-tactile {
+  background-color: var(--surface-card);
+  border: 1px solid var(--slate-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-level-1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.card-tactile:focus-within {
+  box-shadow: var(--shadow-level-2);
+}
+
+.card-sales:focus-within {
+  border-color: var(--profit-emerald);
+  box-shadow: 0 0 0 3px var(--profit-emerald-glow);
+}
+
+.card-expense:focus-within {
+  border-color: var(--expense-rose);
+  box-shadow: 0 0 0 3px var(--expense-rose-glow);
+}
+
+/* Animations */
+@keyframes pulseSubtle {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+}
+
+.pulse-badge {
+  animation: pulseSubtle 3s infinite ease-in-out;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Print Styles for Downloadable Monthly PDF */
+@media print {
+  body {
+    background: #FFFFFF !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+  .card-tactile {
+    box-shadow: none !important;
+    border: 1px solid #CBD5E1 !important;
+  }
+}
