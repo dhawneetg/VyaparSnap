@@ -15,8 +15,10 @@ import {
   BarChart3,
   Download,
   Upload,
+  Cloud,
+  Settings,
 } from 'lucide-react';
-import { ActiveTab, DailyEntry, Product, KhataRecord } from '../types';
+import { ActiveTab, DailyEntry, Product, KhataRecord, StoreProfile } from '../types';
 import { exportBackupJSON, importBackupJSON } from '../utils/storage';
 
 interface HeaderProps {
@@ -28,7 +30,11 @@ interface HeaderProps {
   onPrint: () => void;
   lowStockCount: number;
   pendingKhataCount: number;
+  profile: StoreProfile;
+  onOpenStoreSettings: () => void;
+  onOpenAuthModal: () => void;
   onRestoreData?: (data: {
+    profile?: StoreProfile;
     entries: Record<string, DailyEntry>;
     products: Product[];
     khata: KhataRecord[];
@@ -44,6 +50,9 @@ export const Header: React.FC<HeaderProps> = ({
   onPrint,
   lowStockCount,
   pendingKhataCount,
+  profile,
+  onOpenStoreSettings,
+  onOpenAuthModal,
   onRestoreData,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -100,10 +109,18 @@ export const Header: React.FC<HeaderProps> = ({
                 Retail OS
               </span>
             </div>
-            <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
-              <Store className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Ramesh Kirana Store • Counter #1</span>
-            </div>
+            <button
+              onClick={onOpenStoreSettings}
+              className="flex items-center gap-1.5 text-xs text-slate-600 hover:text-emerald-700 font-medium transition-colors group cursor-pointer text-left"
+              title="Click to change Store Profile, UPI ID & Business Type"
+            >
+              <Store className="w-3.5 h-3.5 text-emerald-600 group-hover:scale-110 transition-transform" />
+              <span className="font-bold underline decoration-dotted decoration-slate-300 group-hover:decoration-emerald-500">
+                {profile.storeName}
+              </span>
+              <span className="text-[10px] text-slate-400">({profile.customTypeName || profile.businessType})</span>
+              <Settings className="w-3 h-3 text-slate-400 group-hover:text-emerald-600" />
+            </button>
           </div>
         </div>
 
@@ -194,6 +211,16 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Right: Controls & Actions */}
         <div className="flex items-center gap-2">
+          {/* Cloud Sync Button */}
+          <button
+            onClick={onOpenAuthModal}
+            className="flex items-center gap-1 px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-lg border border-emerald-200 text-xs font-bold transition-all shadow-xs"
+            title="Multi-Device Cloud Sync via Supabase"
+          >
+            <Cloud className="w-3.5 h-3.5 text-emerald-600" />
+            <span className="hidden sm:inline">Cloud Sync</span>
+          </button>
+
           {/* Backup JSON */}
           <button
             onClick={() => exportBackupJSON()}

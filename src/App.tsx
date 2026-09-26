@@ -8,7 +8,9 @@ import { CalendarView } from './components/CalendarView';
 import { AnalyticsView } from './components/AnalyticsView';
 import { ReceiptModal } from './components/ReceiptModal';
 import { BottomNav } from './components/BottomNav';
-import { ActiveTab, DailyEntry, Product, KhataRecord, CartItem } from './types';
+import { StoreSettingsModal } from './components/StoreSettingsModal';
+import { AuthModal } from './components/AuthModal';
+import { ActiveTab, DailyEntry, Product, KhataRecord, CartItem, StoreProfile } from './types';
 import {
   loadEntries,
   saveEntry,
@@ -22,6 +24,8 @@ import {
   settleKhataRecord,
   resetToSeedData,
   calculateMonthlyStats,
+  loadStoreProfile,
+  saveStoreProfile,
 } from './utils/storage';
 
 export const App: React.FC = () => {
@@ -34,16 +38,60 @@ export const App: React.FC = () => {
   const [receiptEntry, setReceiptEntry] = useState<DailyEntry | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
+  // Store Profile & Modals
+  const [storeProfile, setStoreProfile] = useState<StoreProfile>(loadStoreProfile());
+  const [isStoreSettingsOpen, setIsStoreSettingsOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
   // Initialize data on mount
   useEffect(() => {
     setEntries(loadEntries());
     setProducts(loadProducts());
     setKhataRecords(loadKhata());
+    setStoreProfile(loadStoreProfile());
   }, []);
 
   const showToast = (msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(null), 3000);
+  };
+
+  const handleSaveStoreProfile = (newProfile: StoreProfile) => {
+    const saved = saveStoreProfile(newProfile);
+    setStoreProfile(saved);
+    showToast(`Store updated: ${newProfile.storeName}`);
+  };
+
+  const handleApplyPresetCatalog = (newProducts: Product[], newProfile: StoreProfile) => {
+    setProducts(newProducts);
+    localStorage.setItem('salessnap_products_v2', JSON.stringify(newProducts));
+    const saved = saveStoreProfile(newProfile);
+    setStoreProfile(saved);
+    showToast(`Loaded ${newProducts.length} items for ${newProfile.storeName}!`);
+  };
+
+  const handleCloudSyncSuccess = (cloudData: {
+    profile?: StoreProfile;
+    products?: Product[];
+    entries?: Record<string, DailyEntry>;
+    khata?: KhataRecord[];
+  }) => {
+    if (cloudData.profile) {
+      saveStoreProfile(cloudData.profile);
+      setStoreProfile(cloudData.profile);
+    }
+    if (cloudData.products) {
+      setProducts(cloudData.products);
+      localStorage.setItem('salessnap_products_v2', JSON.stringify(cloudData.products));
+    }
+    if (cloudData.entries) {
+      setEntries(cloudData.entries);
+      localStorage.setItem('salessnap_entries_v2', JSON.stringify(cloudData.entries));
+    }
+    if (cloudData.khata) {
+      setKhataRecords(cloudData.khata);
+      localStorage.setItem('salessnap_khata_v2', JSON.stringify(cloudData.khata));
+    }
   };
 
   /* ==================== ACTIONS ==================== */
@@ -165,10 +213,15 @@ export const App: React.FC = () => {
   const pendingKhataCount = khataRecords.filter((r) => !r.isSettled).length;
 
   const handleRestoreData = (backup: {
+    profile?: StoreProfile;
     entries: Record<string, DailyEntry>;
     products: Product[];
     khata: KhataRecord[];
   }) => {
+    if (backup.profile) {
+      saveStoreProfile(backup.profile);
+      setStoreProfile(backup.profile);
+    }
     setEntries(backup.entries);
     setProducts(backup.products);
     setKhataRecords(backup.khata);
@@ -187,6 +240,9 @@ export const App: React.FC = () => {
         onPrint={() => window.print()}
         lowStockCount={lowStockCount}
         pendingKhataCount={pendingKhataCount}
+        profile={storeProfile}
+        onOpenStoreSettings={() => setIsStoreSettingsOpen(true)}
+        onOpenAuthModal={() => setIsAuthModalOpen(true)}
         onRestoreData={handleRestoreData}
       />
 
@@ -208,6 +264,7 @@ export const App: React.FC = () => {
                 {activeTab === 'counter' && (
                   <CounterView
                     products={products}
+                    profile={storeProfile}
                     onCompleteSale={handleCompleteCounterSale}
                   />
                 )}
@@ -221,6 +278,7 @@ export const App: React.FC = () => {
                 {activeTab === 'khata' && (
                   <KhataView
                     khataRecords={khataRecords}
+                    profile={storeProfile}
                     onAddKhata={(rec) => setKhataRecords(addKhataRecord(rec))}
                     onSettleKhata={handleSettleKhata}
                   />
@@ -268,6 +326,7 @@ export const App: React.FC = () => {
             {activeTab === 'counter' && (
               <CounterView
                 products={products}
+                profile={storeProfile}
                 onCompleteSale={handleCompleteCounterSale}
               />
             )}
@@ -281,6 +340,7 @@ export const App: React.FC = () => {
             {activeTab === 'khata' && (
               <KhataView
                 khataRecords={khataRecords}
+                profile={storeProfile}
                 onAddKhata={(rec) => setKhataRecords(addKhataRecord(rec))}
                 onSettleKhata={handleSettleKhata}
               />
@@ -328,6 +388,28 @@ export const App: React.FC = () => {
         isOpen={Boolean(receiptEntry)}
         onClose={() => setReceiptEntry(null)}
         entry={receiptEntry}
+        profile={storeProfile}
+      />
+
+      {/* Store Settings & Profile Drawer */}
+      <StoreSettingsModal
+        isOpen={isStoreSettingsOpen}
+        onClose={() => setIsStoreSettingsOpen(false)}
+        profile={storeProfile}
+        onSaveProfile={handleSaveStoreProfile}
+        onApplyPresetCatalog={handleApplyPresetCatalog}
+      />
+
+      {/* Supabase Multi-Device Cloud Sync & Auth Modal */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        profile={storeProfile}
+        entries={entries}
+        products={products}
+        khata={khataRecords}
+        onCloudSyncSuccess={handleCloudSyncSuccess}
+        showToast={showToast}
       />
 
       {/* Floating Toast Notification */}

@@ -10,9 +10,11 @@ import {
   Filter,
   PackagePlus,
   X,
+  Sparkles,
 } from 'lucide-react';
 import { Product } from '../types';
 import { formatINR } from '../utils/storage';
+import { getSmartIcon, POPULAR_CATEGORY_ICONS } from '../utils/smartIcons';
 
 interface StockLedgerViewProps {
   products: Product[];
@@ -33,9 +35,14 @@ export const StockLedgerView: React.FC<StockLedgerViewProps> = ({
   const [newTitle, setNewTitle] = useState('');
   const [newPrice, setNewPrice] = useState<number | ''>('');
   const [newStock, setNewStock] = useState<number | ''>('');
-  const [newCategory, setNewCategory] = useState<Product['category']>('Staples & Grains');
+  const [newCategory, setNewCategory] = useState<string>('General Items');
   const [newUnit, setNewUnit] = useState('pack');
   const [newIcon, setNewIcon] = useState('📦');
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+
+  // Derive active categories from existing catalog
+  const existingCategories = Array.from(new Set(products.map((p) => p.category))).filter(Boolean);
+  const categoriesList = existingCategories.length > 0 ? existingCategories : ['General Items', 'Snacks', 'Services'];
 
   const outOfStockCount = products.filter((p) => p.stockQty === 0).length;
   const lowStockCount = products.filter((p) => p.stockQty > 0 && p.stockQty < 10).length;
@@ -302,11 +309,71 @@ export const StockLedgerView: React.FC<StockLedgerViewProps> = ({
                   type="text"
                   required
                   value={newTitle}
-                  onChange={(e) => setNewTitle(e.target.value)}
-                  placeholder="e.g. Parle Hide & Seek, Dalda Ghee"
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium"
+                  onChange={(e) => {
+                    const title = e.target.value;
+                    setNewTitle(title);
+                    const autoDetected = getSmartIcon(title, newCategory);
+                    setNewIcon(autoDetected);
+                  }}
+                  placeholder="e.g. Pani Puri Plate, Aadhaar PVC Card, Chocolate Cake..."
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
+
+              {/* Live Smart Icon Detection Banner */}
+              <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl p-1 bg-white rounded-lg border border-slate-200 shadow-xs">
+                    {newIcon}
+                  </span>
+                  <div>
+                    <span className="text-[11px] font-bold text-slate-800 flex items-center gap-1">
+                      <Sparkles className="w-3 h-3 text-amber-500" />
+                      <span>Smart Icon Auto-Detected</span>
+                    </span>
+                    <span className="text-[10px] text-slate-500">
+                      Matches "{newTitle || 'item'}" automatically
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                  className="text-[11px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-lg border border-emerald-200 transition-colors"
+                >
+                  {showEmojiPicker ? 'Close Picker ✕' : 'Change Icon 🎨'}
+                </button>
+              </div>
+
+              {/* Emoji Catalog Picker Drawer */}
+              {showEmojiPicker && (
+                <div className="p-3 bg-white border border-slate-200 rounded-xl space-y-2 max-h-40 overflow-y-auto animate-slide-up">
+                  {Object.entries(POPULAR_CATEGORY_ICONS).map(([catTitle, emojis]) => (
+                    <div key={catTitle}>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                        {catTitle}
+                      </span>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {emojis.map((emoji) => (
+                          <button
+                            key={emoji}
+                            type="button"
+                            onClick={() => {
+                              setNewIcon(emoji);
+                              setShowEmojiPicker(false);
+                            }}
+                            className={`text-lg p-1.5 rounded-lg border hover:bg-slate-100 transition-all ${
+                              newIcon === emoji ? 'border-emerald-600 bg-emerald-50 shadow-xs' : 'border-slate-200'
+                            }`}
+                          >
+                            {emoji}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -317,7 +384,7 @@ export const StockLedgerView: React.FC<StockLedgerViewProps> = ({
                     value={newPrice}
                     onChange={(e) => setNewPrice(Number(e.target.value))}
                     placeholder="₹ 50"
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   />
                 </div>
 
@@ -328,7 +395,7 @@ export const StockLedgerView: React.FC<StockLedgerViewProps> = ({
                     value={newStock}
                     onChange={(e) => setNewStock(Number(e.target.value))}
                     placeholder="e.g. 20"
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   />
                 </div>
               </div>
@@ -336,17 +403,25 @@ export const StockLedgerView: React.FC<StockLedgerViewProps> = ({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="font-bold text-slate-700 block mb-1">Category</label>
-                  <select
+                  <input
+                    type="text"
+                    list="category-suggestions"
                     value={newCategory}
-                    onChange={(e) => setNewCategory(e.target.value as Product['category'])}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium"
-                  >
-                    <option value="Dairy & Bakery">Dairy & Bakery</option>
-                    <option value="Staples & Grains">Staples & Grains</option>
-                    <option value="Packaged Food">Packaged Food</option>
-                    <option value="Beverages">Beverages</option>
-                    <option value="Personal & Home">Personal & Home</option>
-                  </select>
+                    onChange={(e) => {
+                      const cat = e.target.value;
+                      setNewCategory(cat);
+                      if (newTitle) {
+                        setNewIcon(getSmartIcon(newTitle, cat));
+                      }
+                    }}
+                    placeholder="Select or type..."
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                  <datalist id="category-suggestions">
+                    {categoriesList.map((c) => (
+                      <option key={c} value={c} />
+                    ))}
+                  </datalist>
                 </div>
 
                 <div>
@@ -355,27 +430,9 @@ export const StockLedgerView: React.FC<StockLedgerViewProps> = ({
                     type="text"
                     value={newUnit}
                     onChange={(e) => setNewUnit(e.target.value)}
-                    placeholder="pack, kg, ltr, pcs"
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium"
+                    placeholder="plate, pack, pc, kg"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   />
-                </div>
-              </div>
-
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">Icon Emoji</label>
-                <div className="flex items-center gap-2">
-                  {['🥛', '🍞', '🌾', '🍚', '🧈', '☕', '🍪', '🛢️', '🧼', '📦'].map((emoji) => (
-                    <button
-                      key={emoji}
-                      type="button"
-                      onClick={() => setNewIcon(emoji)}
-                      className={`text-xl p-1.5 rounded-lg border ${
-                        newIcon === emoji ? 'border-emerald-600 bg-emerald-50' : 'border-slate-200'
-                      }`}
-                    >
-                      {emoji}
-                    </button>
-                  ))}
                 </div>
               </div>
 

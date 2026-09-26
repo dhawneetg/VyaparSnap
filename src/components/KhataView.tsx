@@ -12,17 +12,19 @@ import {
   X,
   Send,
 } from 'lucide-react';
-import { KhataRecord } from '../types';
+import { KhataRecord, StoreProfile } from '../types';
 import { formatINR } from '../utils/storage';
 
 interface KhataViewProps {
   khataRecords: KhataRecord[];
+  profile: StoreProfile;
   onAddKhata: (record: Omit<KhataRecord, 'id'>) => void;
   onSettleKhata: (id: string) => void;
 }
 
 export const KhataView: React.FC<KhataViewProps> = ({
   khataRecords,
+  profile,
   onAddKhata,
   onSettleKhata,
 }) => {
@@ -45,8 +47,9 @@ export const KhataView: React.FC<KhataViewProps> = ({
   );
 
   const handleSendWhatsAppReminder = (record: KhataRecord) => {
-    const upiLink = `upi://pay?pa=rameshkirana@okhdfcbank&pn=RameshKirana&am=${record.amount}&cu=INR`;
-    const message = `Namaste ${record.customerName} ji 🙏\nThis is a friendly reminder from *Ramesh Kirana Store*.\n\nYour pending store credit balance is *${formatINR(record.amount)}* for purchases on ${record.date} (${record.notes}).\n\nYou can pay directly via UPI: ${upiLink}\nOr scan the QR at our counter.\n\nThank you!`;
+    const cleanName = profile.storeName.replace(/[^a-zA-Z0-9]/g, '');
+    const upiLink = `upi://pay?pa=${profile.upiVpa}&pn=${cleanName || 'Merchant'}&am=${record.amount}&cu=INR`;
+    const message = `Namaste ${record.customerName} ji 🙏\nThis is a friendly reminder from *${profile.storeName}*.\n\nYour pending store credit balance is *${formatINR(record.amount)}* for purchases on ${record.date} (${record.notes}).\n\nYou can pay directly via UPI: ${upiLink}\nOr scan the QR at our counter.\n\nThank you!`;
     const cleanPhone = record.customerPhone.replace(/\D/g, '');
     const url = cleanPhone
       ? `https://wa.me/91${cleanPhone}?text=${encodeURIComponent(message)}`

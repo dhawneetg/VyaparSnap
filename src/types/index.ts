@@ -1,12 +1,33 @@
+export type BusinessType =
+  | 'kirana'
+  | 'bakery'
+  | 'boutique'
+  | 'cafe'
+  | 'electronics'
+  | 'emitra'
+  | 'streetfood'
+  | 'custom';
+
+export interface StoreProfile {
+  storeName: string;
+  ownerName: string;
+  phone: string;
+  upiVpa: string;
+  businessType: BusinessType;
+  customTypeName?: string;
+  address?: string;
+  currencySymbol: string;
+}
+
 export interface Product {
   id: string;
   name: string;
   price: number;
   stockQty: number;
-  category: 'Dairy & Bakery' | 'Staples & Grains' | 'Packaged Food' | 'Personal & Home' | 'Beverages';
+  category: string;
   icon: string;
   isFrequent: boolean;
-  unit: string; // e.g. 'pack', 'kg', 'ltr', 'pcs'
+  unit: string; // e.g. 'pack', 'kg', 'ltr', 'pcs', 'plate', 'item', 'page'
 }
 
 export interface CartItem {

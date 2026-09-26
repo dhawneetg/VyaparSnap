@@ -1,9 +1,31 @@
-import { DailyEntry, MonthlyStats, Product, KhataRecord, CartItem } from '../types';
+import { DailyEntry, MonthlyStats, Product, KhataRecord, CartItem, StoreProfile } from '../types';
 import { INITIAL_SEED_ENTRIES, INITIAL_PRODUCTS, INITIAL_KHATA_RECORDS } from '../data/seedData';
+import { DEFAULT_STORE_PROFILE } from '../data/businessCatalogs';
 
 const STORAGE_KEY_ENTRIES = 'salessnap_entries_v2';
 const STORAGE_KEY_PRODUCTS = 'salessnap_products_v2';
 const STORAGE_KEY_KHATA = 'salessnap_khata_v2';
+const STORAGE_KEY_STORE_PROFILE = 'vyaparsnap_store_profile_v2';
+
+/* ==================== STORE PROFILE ==================== */
+export function loadStoreProfile(): StoreProfile {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_STORE_PROFILE);
+    if (!raw) {
+      localStorage.setItem(STORAGE_KEY_STORE_PROFILE, JSON.stringify(DEFAULT_STORE_PROFILE));
+      return DEFAULT_STORE_PROFILE;
+    }
+    return JSON.parse(raw);
+  } catch (err) {
+    console.error('Error loading store profile', err);
+    return DEFAULT_STORE_PROFILE;
+  }
+}
+
+export function saveStoreProfile(profile: StoreProfile): StoreProfile {
+  localStorage.setItem(STORAGE_KEY_STORE_PROFILE, JSON.stringify(profile));
+  return profile;
+}
 
 /* ==================== ENTRIES ==================== */
 export function loadEntries(): Record<string, DailyEntry> {
@@ -255,6 +277,7 @@ export interface BackupData {
   version: string;
   exportedAt: string;
   app: string;
+  profile?: StoreProfile;
   entries: Record<string, DailyEntry>;
   products: Product[];
   khata: KhataRecord[];
@@ -265,6 +288,7 @@ export function exportBackupJSON(): void {
     version: '2.0',
     exportedAt: new Date().toISOString(),
     app: 'VyaparSnap',
+    profile: loadStoreProfile(),
     entries: loadEntries(),
     products: loadProducts(),
     khata: loadKhata(),
@@ -282,6 +306,7 @@ export function exportBackupJSON(): void {
 }
 
 export function importBackupJSON(jsonStr: string): {
+  profile?: StoreProfile;
   entries: Record<string, DailyEntry>;
   products: Product[];
   khata: KhataRecord[];
@@ -296,8 +321,12 @@ export function importBackupJSON(jsonStr: string): {
   if (parsed.khata) {
     localStorage.setItem(STORAGE_KEY_KHATA, JSON.stringify(parsed.khata));
   }
+  if (parsed.profile) {
+    localStorage.setItem(STORAGE_KEY_STORE_PROFILE, JSON.stringify(parsed.profile));
+  }
 
   return {
+    profile: parsed.profile,
     entries: parsed.entries,
     products: parsed.products,
     khata: parsed.khata || [],

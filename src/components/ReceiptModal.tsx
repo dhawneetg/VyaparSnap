@@ -1,22 +1,24 @@
 import React from 'react';
 import { X, Share2, Printer, CheckCircle } from 'lucide-react';
-import { DailyEntry } from '../types';
+import { DailyEntry, StoreProfile } from '../types';
 import { formatINR } from '../utils/storage';
 
 interface ReceiptModalProps {
   isOpen: boolean;
   onClose: () => void;
   entry: DailyEntry | null;
+  profile?: StoreProfile;
 }
 
-export const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, onClose, entry }) => {
+export const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, onClose, entry, profile }) => {
   if (!isOpen || !entry) return null;
 
   const netProfit = entry.sales - entry.expenses;
   const isProfit = netProfit >= 0;
+  const currentStoreName = profile?.storeName || 'Ramesh Kirana Store';
 
   const handleShareWhatsApp = () => {
-    const text = `📊 *VYAPARSNAP DAILY STATEMENT*\nStore: Ramesh Kirana Store\nDate: ${entry.date}\n--------------------------\n💰 Gross Sales: ${formatINR(entry.sales)}\n  • Cash: ${formatINR(entry.cashSales || Math.round(entry.sales * 0.6))}\n  • UPI: ${formatINR(entry.upiSales || Math.round(entry.sales * 0.4))}\n📤 Expenses: ${formatINR(entry.expenses)}\n--------------------------\n${isProfit ? '✅ NET PROFIT' : '⚠️ NET LOSS'}: ${formatINR(netProfit)}\nNote: ${entry.notes || 'Routine trading'}\n--------------------------\nGenerated via VyaparSnap Ledger`;
+    const text = `📊 *VYAPARSNAP DAILY STATEMENT*\nStore: ${currentStoreName}\nDate: ${entry.date}\n--------------------------\n💰 Gross Sales: ${formatINR(entry.sales)}\n  • Cash: ${formatINR(entry.cashSales || Math.round(entry.sales * 0.6))}\n  • UPI: ${formatINR(entry.upiSales || Math.round(entry.sales * 0.4))}\n📤 Expenses: ${formatINR(entry.expenses)}\n--------------------------\n${isProfit ? '✅ NET PROFIT' : '⚠️ NET LOSS'}: ${formatINR(netProfit)}\nNote: ${entry.notes || 'Routine trading'}\n--------------------------\nGenerated via VyaparSnap Ledger`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
   };
 
@@ -43,10 +45,12 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, onClose, ent
         {/* Paper Receipt Simulation */}
         <div className="p-6 bg-slate-50 space-y-4 font-mono text-xs text-slate-800 border-b border-dashed border-slate-300">
           <div className="text-center space-y-1">
-            <div className="font-extrabold text-sm tracking-wider font-display">
-              RAMESH KIRANA STORE
+            <div className="font-extrabold text-sm tracking-wider font-display uppercase">
+              {currentStoreName}
             </div>
-            <div className="text-[11px] text-slate-500">APMC Market Road, Sector 4</div>
+            <div className="text-[11px] text-slate-500">
+              {profile?.ownerName ? `Owner: ${profile.ownerName}` : 'APMC Market Road, Sector 4'}
+            </div>
             <div className="text-[11px] text-slate-500">Date: {entry.date}</div>
           </div>
 

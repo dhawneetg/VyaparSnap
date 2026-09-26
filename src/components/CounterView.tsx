@@ -18,12 +18,13 @@ import {
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import confetti from 'canvas-confetti';
-import { Product, CartItem } from '../types';
+import { Product, CartItem, StoreProfile } from '../types';
 import { formatINR } from '../utils/storage';
 import { playCashRegisterChime, speakSoundboxAnnouncement } from '../utils/audio';
 
 interface CounterViewProps {
   products: Product[];
+  profile: StoreProfile;
   onCompleteSale: (
     total: number,
     mode: 'CASH' | 'UPI' | 'KHATA',
@@ -33,7 +34,7 @@ interface CounterViewProps {
   ) => void;
 }
 
-export const CounterView: React.FC<CounterViewProps> = ({ products, onCompleteSale }) => {
+export const CounterView: React.FC<CounterViewProps> = ({ products, profile, onCompleteSale }) => {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
@@ -61,7 +62,7 @@ export const CounterView: React.FC<CounterViewProps> = ({ products, onCompleteSa
     }
   };
 
-  const categories = ['All', 'Dairy & Bakery', 'Staples & Grains', 'Packaged Food', 'Beverages', 'Personal & Home'];
+  const categories = ['All', ...Array.from(new Set(products.map((p) => p.category))).filter(Boolean)];
 
   const filteredProducts = products.filter((p) => {
     const matchesCat = selectedCategory === 'All' || p.category === selectedCategory;
@@ -145,7 +146,7 @@ export const CounterView: React.FC<CounterViewProps> = ({ products, onCompleteSa
     // Format WhatsApp bill if requested
     if (dispatchWhatsApp) {
       const receiptLines = cart.map((i) => `• ${i.qty}x ${i.name} — ₹${i.price * i.qty}`).join('\n');
-      const billText = `🧾 *RAMESH KIRANA STORE*\nDate: 26 Sep 2026\n--------------------------\n${receiptLines}\n--------------------------\n*TOTAL BILL: ₹${totalAmount}*\nPayment Mode: ${paymentMode} ✅\n\nThank you for shopping with us! 🙏`;
+      const billText = `🧾 *${profile.storeName.toUpperCase()}*\nDate: 26 Sep 2026\n--------------------------\n${receiptLines}\n--------------------------\n*TOTAL BILL: ₹${totalAmount}*\nPayment Mode: ${paymentMode} ✅\n\nThank you for shopping with us! 🙏`;
       const cleanPhone = customerPhone.replace(/\D/g, '');
       const waUrl = cleanPhone
         ? `https://wa.me/91${cleanPhone}?text=${encodeURIComponent(billText)}`
@@ -160,8 +161,9 @@ export const CounterView: React.FC<CounterViewProps> = ({ products, onCompleteSa
     setShowUpiQrModal(false);
   };
 
-  // Standard NPCI UPI payload
-  const upiPayload = `upi://pay?pa=rameshkirana@okhdfcbank&pn=RameshKiranaStore&am=${totalAmount}&cu=INR&tn=Bill-${Date.now().toString().slice(-4)}`;
+  // Standard NPCI UPI payload with dynamic store UPI ID
+  const cleanStoreName = profile.storeName.replace(/[^a-zA-Z0-9]/g, '');
+  const upiPayload = `upi://pay?pa=${profile.upiVpa}&pn=${cleanStoreName || 'VyaparMerchant'}&am=${totalAmount}&cu=INR&tn=Bill-${Date.now().toString().slice(-4)}`;
 
   return (
     <div className="w-full max-w-6xl mx-auto px-4 py-6 animate-slide-up space-y-6">
