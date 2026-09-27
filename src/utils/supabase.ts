@@ -61,27 +61,87 @@ export function isSupabaseConfigured(): boolean {
   return Boolean(config.url && config.anonKey);
 }
 
+export interface NormalizedCredentials {
+  authEmail: string;
+  authPassword: string;
+  isPhone: boolean;
+  rawPhone?: string;
+  displayIdentifier: string;
+}
+
+/**
+ * Normalizes vendor credentials so merchants can log in with a simple
+ * 10-digit mobile number and 4-digit PIN without needing email or complex passwords.
+ */
+export function normalizeMerchantCredentials(identifier: string, pinOrPass: string): NormalizedCredentials {
+  const trimmed = identifier.trim();
+  const cleanDigits = trimmed.replace(/\D/g, '');
+  const isPhone = cleanDigits.length === 10;
+
+  const authEmail = isPhone
+    ? `${cleanDigits}@vyaparsnap.store`
+    : trimmed.toLowerCase();
+
+  // Supabase Auth strictly requires at least 6 characters for passwords.
+  // If the vendor types a 4-digit PIN (e.g. "1234"), we prefix it transparently with "vs_pin_"
+  // so the vendor only has to remember their 4-digit PIN!
+  const authPassword = pinOrPass.length < 6 ? `vs_pin_${pinOrPass}` : pinOrPass;
+
+  const displayIdentifier = isPhone
+    ? `+91 ${cleanDigits.slice(0, 5)} ${cleanDigits.slice(5)}`
+    : trimmed;
+
+  return {
+    authEmail,
+    authPassword,
+    isPhone,
+    rawPhone: isPhone ? cleanDigits : undefined,
+    displayIdentifier,
+  };
+}
+
+export function getMerchantDisplayIdentifier(user: User | null): string {
+  if (!user) return '';
+  if (user.user_metadata?.display_name) {
+    return user.user_metadata.display_name;
+  }
+  if (user.user_metadata?.phone) {
+    const p = String(user.user_metadata.phone);
+    if (p.length === 10) return `+91 ${p.slice(0, 5)} ${p.slice(5)}`;
+    return p;
+  }
+  if (user.email?.endsWith('@vyaparsnap.store')) {
+    const digits = user.email.replace('@vyaparsnap.store', '');
+    if (digits.length === 10) return `+91 ${digits.slice(0, 5)} ${digits.slice(5)}`;
+  }
+  return user.email || 'Merchant';
+}
+
 /* ==================== AUTHENTICATION ==================== */
 export async function signUpMerchant(
-  email: string,
-  pass: string,
+  identifier: string,
+  pinOrPass: string,
   storeName: string
 ): Promise<{ user: User | null; error: string | null }> {
   const client = getSupabaseClient();
   if (!client) {
     return {
       user: null,
-      error: 'Supabase URL & Anon Key not configured. Please enter them in Cloud Settings.',
+      error: 'Central cloud server is currently offline or not configured by the platform. Operating in 100% local offline mode.',
     };
   }
 
+  const norm = normalizeMerchantCredentials(identifier, pinOrPass);
+
   try {
     const { data, error } = await client.auth.signUp({
-      email,
-      password: pass,
+      email: norm.authEmail,
+      password: norm.authPassword,
       options: {
         data: {
           store_name: storeName,
+          phone: norm.rawPhone || '',
+          display_name: norm.displayIdentifier,
         },
       },
     });
@@ -97,21 +157,23 @@ export async function signUpMerchant(
 }
 
 export async function signInMerchant(
-  email: string,
-  pass: string
+  identifier: string,
+  pinOrPass: string
 ): Promise<{ user: User | null; error: string | null }> {
   const client = getSupabaseClient();
   if (!client) {
     return {
       user: null,
-      error: 'Supabase URL & Anon Key not configured. Please enter them in Cloud Settings.',
+      error: 'Central cloud server is currently offline or not configured by the platform. Operating in 100% local offline mode.',
     };
   }
 
+  const norm = normalizeMerchantCredentials(identifier, pinOrPass);
+
   try {
     const { data, error } = await client.auth.signInWithPassword({
-      email,
-      password: pass,
+      email: norm.authEmail,
+      password: norm.authPassword,
     });
 
     if (error) return { user: null, error: error.message };

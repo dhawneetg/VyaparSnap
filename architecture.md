@@ -257,3 +257,44 @@ When navigating to the **[📊 Day P&L]** screen, the system calculates daily pe
   * **JSON Backup & Restore:** Merchants can export a complete JSON snapshot of their ledger to WhatsApp or local storage, preventing loss during device changes.
   * **CSV Audit Export:** One-click spreadsheet export for tax advisors or family record-keeping.
 * **Privacy by Design:** All transaction data and customer telephone numbers remain on device storage; zero telemetry is sold to third-party ad networks.
+
+---
+
+## 6. Single Master Cloud Backend & Row-Level Security (RLS)
+
+To eliminate vendor technical friction, VyaparSnap operates on a **Single Centralized Backend Architecture**:
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│                   Single Central Supabase PostgreSQL Platform                    │
+│                                                                                  │
+│   ┌──────────────────────────────────────────────────────────────────────────┐   │
+│   │   Row Level Security Policies: auth.uid() = user_id                      │   │
+│   │   • stores (store_name, owner_name, upi_vpa, business_type)              │   │
+│   │   • products (product_id, name, price, stock_qty, category, unit)        │   │
+│   │   • daily_entries (entry_date, sales, expenses, cash, upi, khata)        │   │
+│   │   • khata_records (record_id, customer_name, amount, is_settled)         │   │
+│   └─────────────────────────────────────┬────────────────────────────────────┘   │
+└─────────────────────────────────────────┼────────────────────────────────────────┘
+                                          │
+                    ┌─────────────────────┴─────────────────────┐
+                    ▼                                           ▼
+         Merchant 1 (Kirana)                        Merchant 2 (Street Food)
+         10-digit Phone + 4-digit PIN               10-digit Phone + 4-digit PIN
+         Data Isolated by RLS                       Data Isolated by RLS
+```
+
+### 6.1. Zero-Tech Vendor Onboarding
+* Vendors are never asked for Supabase URLs, Anon Keys, or database settings.
+* Authentication uses familiar **10-Digit Mobile Number + 4-Digit Security PIN** (or Email + Password).
+* Credential normalization internally maps mobile numbers (`9876543210@vyaparsnap.store`) and pads short PINs (`vs_pin_1234`), providing instant account creation with **zero SMS gateway costs**.
+
+### 6.2. Cryptographic Multi-Tenant Isolation
+* Every table (`stores`, `products`, `daily_entries`, `khata_records`) has a foreign key to `auth.users(id)`.
+* PostgreSQL RLS policies (`CREATE POLICY ... USING (auth.uid() = user_id)`) ensure each vendor can only access and modify their own records.
+* Even across millions of transactions, data isolation is enforced at the database kernel level.
+
+### 6.3. Dual-Tier Persistence
+* **Tier 1 (Local):** Instant synchronous writes to `localStorage` and `IndexedDB`.
+* **Tier 2 (Cloud):** Asynchronous upserts to the central Supabase backend when online.
+

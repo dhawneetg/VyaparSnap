@@ -105,8 +105,8 @@ export const StoreSettingsModal: React.FC<StoreSettingsModalProps> = ({
               <Store className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h3 className="text-base font-extrabold font-display">Store Profile & Retail Type</h3>
-              <p className="text-[11px] text-slate-400">Configure business identity, UPI payments & catalog</p>
+              <h3 className="text-base font-extrabold text-white font-display">Store Profile & Retail Type</h3>
+              <p className="text-[11px] text-slate-300">Configure business identity, UPI payments & catalog</p>
             </div>
           </div>
           <button

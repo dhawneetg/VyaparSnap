@@ -163,7 +163,7 @@ India and emerging markets host over **15 million independent micro-retailers** 
    ```bash
    npm run dev
    ```
-   Open [http://localhost:5173](http://localhost:5173) in your browser.
+   Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 4. **Build for production:**
    ```bash
@@ -174,6 +174,49 @@ India and emerging markets host over **15 million independent micro-retailers** 
    ```bash
    npm run preview
    ```
+
+---
+
+## ☁️ Single Central Supabase Backend (Multi-Device Cloud Backup)
+
+VyaparSnap is designed like a consumer SaaS product (similar to Khatabook or Dukaan): **there is only ONE centralized Supabase database managed by the platform owner**, and individual vendors never have to create databases or touch API keys.
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                 Single Central Platform Database (Supabase PostgreSQL)          │
+│                                                                                 │
+│   ┌─────────────────────────────────────────────────────────────────────────┐   │
+│   │   Row Level Security (RLS) Policies (auth.uid() = user_id)              │   │
+│   │   • stores          • products        • daily_entries   • khata_records │   │
+│   └────────────────────────────────────┬────────────────────────────────────┘   │
+└────────────────────────────────────────┼────────────────────────────────────────┘
+                                         │
+                   ┌─────────────────────┴─────────────────────┐
+                   ▼                                           ▼
+       ┌────────────────────────┐                 ┌────────────────────────┐
+       │ Merchant A (Kirana)    │                 │ Merchant B (Street Food)│
+       │ Mobile: 98765 43210    │                 │ Mobile: 91234 56789    │
+       │ PIN: 1234              │                 │ PIN: 5678              │
+       │ (Sees only Store A)    │                 │ (Sees only Store B)    │
+       └────────────────────────┘                 └────────────────────────┘
+```
+
+### Why This Matters for Indian Micro-Vendors:
+* **Zero Cognitive Friction:** Shopkeepers like Ramesh don't know what SQL, API keys, or database URLs are.
+* **10-Digit Mobile + 4-Digit PIN Auth:** Vendors simply enter their 10-digit mobile number and a 4-digit PIN (e.g., `9876543210` & `1234`).
+* **Zero SMS Costs:** We internally normalize mobile credentials (`phone@vyaparsnap.store` and `vs_pin_1234`), providing instant multi-device authentication with **$0 SMS gateway fees**.
+* **Cryptographic Data Isolation:** PostgreSQL Row Level Security (RLS) guarantees Merchant A can never see or modify Merchant B's data.
+* **100% Offline-First Fallback:** Cloud sync is optional. If the store loses network connectivity, VyaparSnap runs entirely locally via IndexedDB/localStorage.
+
+### Deployer / Admin Setup (One-Time Only):
+1. Create a Supabase project at [supabase.com](https://supabase.com).
+2. Go to **SQL Editor** and execute the script in [`supabase_schema.sql`](supabase_schema.sql).
+3. Set your environment variables in `.env` (or in Vercel / Netlify):
+   ```env
+   VITE_SUPABASE_URL=https://your-central-project.supabase.co
+   VITE_SUPABASE_ANON_KEY=your-anon-public-key
+   ```
+4. All vendors who use your deployed app will now automatically connect to this single cloud database!
 
 ---
 
