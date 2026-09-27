@@ -10,7 +10,7 @@ import { ReceiptModal } from './components/ReceiptModal';
 import { BottomNav } from './components/BottomNav';
 import { StoreSettingsModal } from './components/StoreSettingsModal';
 import { AuthModal } from './components/AuthModal';
-import { ActiveTab, DailyEntry, Product, KhataRecord, CartItem, StoreProfile } from './types';
+import { ActiveTab, DailyEntry, Product, KhataRecord, CartItem, StoreProfile, SaleTransaction } from './types';
 import {
   loadEntries,
   saveEntry,
@@ -23,6 +23,9 @@ import {
   loadKhata,
   addKhataRecord,
   settleKhataRecord,
+  loadTransactions,
+  saveTransaction,
+  deleteTransaction,
   resetToSeedData,
   calculateMonthlyStats,
   loadStoreProfile,
@@ -33,6 +36,7 @@ export const App: React.FC = () => {
   const [entries, setEntries] = useState<Record<string, DailyEntry>>({});
   const [products, setProducts] = useState<Product[]>([]);
   const [khataRecords, setKhataRecords] = useState<KhataRecord[]>([]);
+  const [transactions, setTransactions] = useState<SaleTransaction[]>([]);
   const [activeTab, setActiveTab] = useState<ActiveTab>('counter');
   const [selectedDate, setSelectedDate] = useState<string>('2026-09-26');
   const [isMobilePreview, setIsMobilePreview] = useState<boolean>(false);
@@ -49,6 +53,7 @@ export const App: React.FC = () => {
     setEntries(loadEntries());
     setProducts(loadProducts());
     setKhataRecords(loadKhata());
+    setTransactions(loadTransactions());
     setStoreProfile(loadStoreProfile());
   }, []);
 
@@ -112,23 +117,25 @@ export const App: React.FC = () => {
   };
 
   const handleResetData = () => {
-    if (window.confirm('Reset all records back to demo dataset (September ledger, stock, khata)?')) {
+    if (window.confirm('Reset all records back to demo dataset (September ledger, stock, khata, bills)?')) {
       const reset = resetToSeedData();
       setEntries(reset.entries);
       setProducts(reset.products);
       setKhataRecords(reset.khata);
+      setTransactions(reset.transactions);
       setSelectedDate('2026-09-26');
       showToast('Reset to demo dataset successfully');
     }
   };
 
-  // 3-Tap Counter Sale Completion: decrements stock & updates daily sales
+  // 3-Tap Counter Sale Completion: decrements stock, records transaction & updates daily sales
   const handleCompleteCounterSale = (
     total: number,
     mode: 'CASH' | 'UPI' | 'KHATA',
     cart: CartItem[],
     customerName?: string,
-    customerPhone?: string
+    customerPhone?: string,
+    discount?: number
   ) => {
     const todayStr = '2026-09-26';
     const current = entries[todayStr] || {
@@ -158,6 +165,23 @@ export const App: React.FC = () => {
     const savedEntries = saveEntry(updatedEntry);
     setEntries(savedEntries);
 
+    // Record persistent sale transaction
+    const nextBillNo = transactions.length > 0 ? Math.max(...transactions.map((t) => t.billNo || 100)) + 1 : 101;
+    const newTx: SaleTransaction = {
+      id: `txn-${Date.now()}`,
+      billNo: nextBillNo,
+      timestamp: new Date().toISOString(),
+      date: todayStr,
+      total,
+      paymentMode: mode,
+      cart,
+      customerName,
+      customerPhone,
+      discount,
+    };
+    const updatedTxns = saveTransaction(newTx);
+    setTransactions(updatedTxns);
+
     // Auto-decrement inventory stock for sold items
     const updatedProducts = decrementStockOnSale(cart);
     setProducts(updatedProducts);
@@ -174,10 +198,57 @@ export const App: React.FC = () => {
         isSettled: false,
       });
       setKhataRecords(updatedKhata);
-      showToast(`Sale recorded & added to ${customerName || 'Customer'} Khata!`);
+      showToast(`Bill #${nextBillNo} (₹${total}) added to ${customerName || 'Customer'} Khata!`);
     } else {
-      showToast(`Recorded ₹${total} sale via ${mode}!`);
+      showToast(`Bill #${nextBillNo} recorded: ₹${total} via ${mode}!`);
     }
+  };
+
+  // Void a sale transaction with stock restoration and ledger adjustment
+  const handleVoidTransaction = (transactionId: string) => {
+    const tx = transactions.find((t) => t.id === transactionId);
+    if (!tx) return;
+    if (
+      !window.confirm(
+        `Void Bill #${tx.billNo} for ₹${tx.total}?\n\n• Restores stock quantities for sold items\n• Deducts ₹${tx.total} from today's ledger`
+      )
+    ) {
+      return;
+    }
+
+    const updatedTxns = deleteTransaction(transactionId);
+    setTransactions(updatedTxns);
+
+    // Restore stock for items
+    let currentProducts = loadProducts();
+    tx.cart.forEach((item) => {
+      if (item.productId) {
+        currentProducts = updateStockQuantity(item.productId, item.qty);
+      }
+    });
+    setProducts(currentProducts);
+
+    // Adjust daily entry
+    const current = entries[tx.date];
+    if (current) {
+      const adjSales = Math.max(0, current.sales - tx.total);
+      const adjCash = tx.paymentMode === 'CASH' ? Math.max(0, (current.cashSales || 0) - tx.total) : current.cashSales;
+      const adjUpi = tx.paymentMode === 'UPI' ? Math.max(0, (current.upiSales || 0) - tx.total) : current.upiSales;
+      const adjKhata = tx.paymentMode === 'KHATA' ? Math.max(0, (current.khataSales || 0) - tx.total) : current.khataSales;
+
+      const updatedEntry: DailyEntry = {
+        ...current,
+        sales: adjSales,
+        cashSales: adjCash,
+        upiSales: adjUpi,
+        khataSales: adjKhata,
+        transactionCount: Math.max(0, (current.transactionCount || 1) - 1),
+      };
+      const saved = saveEntry(updatedEntry);
+      setEntries(saved);
+    }
+
+    showToast(`Bill #${tx.billNo} voided and stock restored!`);
   };
 
   // Stock updates
@@ -231,6 +302,7 @@ export const App: React.FC = () => {
     entries: Record<string, DailyEntry>;
     products: Product[];
     khata: KhataRecord[];
+    transactions?: SaleTransaction[];
   }) => {
     if (backup.profile) {
       saveStoreProfile(backup.profile);
@@ -239,6 +311,9 @@ export const App: React.FC = () => {
     setEntries(backup.entries);
     setProducts(backup.products);
     setKhataRecords(backup.khata);
+    if (backup.transactions) {
+      setTransactions(backup.transactions);
+    }
     showToast('Database restored successfully from backup!');
   };
 
@@ -279,15 +354,18 @@ export const App: React.FC = () => {
                   <CounterView
                     products={products}
                     profile={storeProfile}
+                    transactions={transactions}
                     onCompleteSale={handleCompleteCounterSale}
                     onAddProduct={handleAddProduct}
                     onUpdateProduct={handleUpdateProduct}
                     onDeleteProduct={handleDeleteProduct}
+                    onVoidTransaction={handleVoidTransaction}
                   />
                 )}
                 {activeTab === 'stock' && (
                   <StockLedgerView
                     products={products}
+                    profile={storeProfile}
                     onUpdateStock={handleUpdateStock}
                     onAddProduct={handleAddProduct}
                     onUpdateProduct={handleUpdateProduct}
@@ -346,15 +424,18 @@ export const App: React.FC = () => {
               <CounterView
                 products={products}
                 profile={storeProfile}
+                transactions={transactions}
                 onCompleteSale={handleCompleteCounterSale}
                 onAddProduct={handleAddProduct}
                 onUpdateProduct={handleUpdateProduct}
                 onDeleteProduct={handleDeleteProduct}
+                onVoidTransaction={handleVoidTransaction}
               />
             )}
             {activeTab === 'stock' && (
               <StockLedgerView
                 products={products}
+                profile={storeProfile}
                 onUpdateStock={handleUpdateStock}
                 onAddProduct={handleAddProduct}
                 onUpdateProduct={handleUpdateProduct}

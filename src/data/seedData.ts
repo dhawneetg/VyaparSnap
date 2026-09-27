@@ -132,3 +132,58 @@ export const INITIAL_SEED_ENTRIES: Record<string, DailyEntry> = {
     ],
   },
 };
+
+export const INITIAL_TRANSACTIONS = [
+  {
+    id: 'txn-101',
+    billNo: 101,
+    timestamp: '2026-09-26T08:30:00.000Z',
+    date: '2026-09-26',
+    total: 91,
+    paymentMode: 'UPI' as const,
+    cart: [
+      { id: 'c1', productId: 'p1', name: 'Amul Taaza Milk 500ml', price: 33, qty: 2, icon: '🥛' },
+      { id: 'c2', productId: 'p2', name: 'Modern Bread (White)', price: 25, qty: 1, icon: '🍞' },
+    ],
+    customerName: 'Priya Verma',
+    customerPhone: '9876543210',
+  },
+  {
+    id: 'txn-102',
+    billNo: 102,
+    timestamp: '2026-09-26T09:15:00.000Z',
+    date: '2026-09-26',
+    total: 252,
+    paymentMode: 'CASH' as const,
+    cart: [
+      { id: 'c3', productId: 'p6', name: 'Aashirvaad Shudh Atta', price: 210, qty: 1, icon: '🌾' },
+      { id: 'c4', productId: 'p3', name: 'Farm Fresh Eggs', price: 42, qty: 1, icon: '🥚' },
+    ],
+  },
+  {
+    id: 'txn-103',
+    billNo: 103,
+    timestamp: '2026-09-26T10:45:00.000Z',
+    date: '2026-09-26',
+    total: 130,
+    paymentMode: 'UPI' as const,
+    cart: [
+      { id: 'c5', productId: 'p8', name: 'Tata Tea Gold', price: 130, qty: 1, icon: '☕' },
+    ],
+    customerName: 'Vikram Singh',
+    customerPhone: '9822334455',
+  },
+  {
+    id: 'txn-104',
+    billNo: 104,
+    timestamp: '2026-09-26T11:20:00.000Z',
+    date: '2026-09-26',
+    total: 58,
+    paymentMode: 'KHATA' as const,
+    cart: [
+      { id: 'c6', productId: 'p4', name: 'Amul Butter 100g', price: 58, qty: 1, icon: '🧈' },
+    ],
+    customerName: 'Ramesh Sharma',
+    customerPhone: '9876543210',
+  },
+];

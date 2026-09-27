@@ -13,13 +13,17 @@ import {
   Sparkles,
   Edit2,
   Trash2,
+  Share2,
+  Truck,
 } from 'lucide-react';
-import { Product } from '../types';
+import { Product, StoreProfile } from '../types';
 import { formatINR } from '../utils/storage';
 import { ProductFormModal } from './ProductFormModal';
+import { WholesaleOrderModal } from './WholesaleOrderModal';
 
 interface StockLedgerViewProps {
   products: Product[];
+  profile: StoreProfile;
   onUpdateStock: (productId: string, delta: number) => void;
   onAddProduct: (product: Product) => void;
   onUpdateProduct: (product: Product) => void;
@@ -28,6 +32,7 @@ interface StockLedgerViewProps {
 
 export const StockLedgerView: React.FC<StockLedgerViewProps> = ({
   products,
+  profile,
   onUpdateStock,
   onAddProduct,
   onUpdateProduct,
@@ -37,6 +42,7 @@ export const StockLedgerView: React.FC<StockLedgerViewProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [isWholesaleModalOpen, setIsWholesaleModalOpen] = useState(false);
 
   // Derive active categories from existing catalog
   const existingCategories = Array.from(new Set(products.map((p) => p.category))).filter(Boolean);
@@ -74,16 +80,36 @@ export const StockLedgerView: React.FC<StockLedgerViewProps> = ({
           </p>
         </div>
 
-        <button
-          onClick={() => {
-            setEditingProduct(null);
-            setIsProductModalOpen(true);
-          }}
-          className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold shadow-sm shadow-emerald-900/10 transition-all active:scale-95"
-        >
-          <PackagePlus className="w-4 h-4 text-emerald-200" />
-          <span>+ Add New Product (नया सामान)</span>
-        </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* WhatsApp Wholesale Reorder Slip */}
+          <button
+            type="button"
+            onClick={() => setIsWholesaleModalOpen(true)}
+            className="flex items-center justify-center gap-1.5 px-3.5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all shadow-xs"
+            title="Create 1-tap WhatsApp purchase order for low-stock goods"
+          >
+            <Share2 className="w-4 h-4 text-emerald-400" />
+            <span>📲 Supplier Reorder Slip</span>
+            {outOfStockCount + lowStockCount > 0 && (
+              <span className="bg-rose-500 text-white text-[10px] font-extrabold px-1.5 py-0.2 rounded-full">
+                {outOfStockCount + lowStockCount}
+              </span>
+            )}
+          </button>
+
+          {/* Add Product Button */}
+          <button
+            type="button"
+            onClick={() => {
+              setEditingProduct(null);
+              setIsProductModalOpen(true);
+            }}
+            className="flex items-center justify-center gap-1.5 px-3.5 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold shadow-sm shadow-emerald-900/10 transition-all active:scale-95"
+          >
+            <PackagePlus className="w-4 h-4 text-emerald-200" />
+            <span>+ Add New Item</span>
+          </button>
+        </div>
       </div>
 
       {/* Traffic Light Status KPI Cards */}
@@ -311,6 +337,14 @@ export const StockLedgerView: React.FC<StockLedgerViewProps> = ({
           }
         }}
         onDelete={onDeleteProduct}
+      />
+
+      {/* Wholesale Supplier Reorder Slip Modal */}
+      <WholesaleOrderModal
+        isOpen={isWholesaleModalOpen}
+        onClose={() => setIsWholesaleModalOpen(false)}
+        products={products}
+        profile={profile}
       />
     </div>
   );

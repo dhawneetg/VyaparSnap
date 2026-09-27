@@ -39,6 +39,19 @@ export interface CartItem {
   icon?: string;
 }
 
+export interface SaleTransaction {
+  id: string;
+  billNo: number;
+  timestamp: string; // ISO date string
+  date: string; // 'YYYY-MM-DD'
+  total: number;
+  paymentMode: 'CASH' | 'UPI' | 'KHATA';
+  cart: CartItem[];
+  customerName?: string;
+  customerPhone?: string;
+  discount?: number;
+}
+
 export interface KhataRecord {
   id: string;
   customerName: string;

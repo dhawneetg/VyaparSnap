@@ -1,11 +1,12 @@
-import { DailyEntry, MonthlyStats, Product, KhataRecord, CartItem, StoreProfile } from '../types';
-import { INITIAL_SEED_ENTRIES, INITIAL_PRODUCTS, INITIAL_KHATA_RECORDS } from '../data/seedData';
+import { DailyEntry, MonthlyStats, Product, KhataRecord, CartItem, StoreProfile, SaleTransaction } from '../types';
+import { INITIAL_SEED_ENTRIES, INITIAL_PRODUCTS, INITIAL_KHATA_RECORDS, INITIAL_TRANSACTIONS } from '../data/seedData';
 import { DEFAULT_STORE_PROFILE } from '../data/businessCatalogs';
 
 const STORAGE_KEY_ENTRIES = 'salessnap_entries_v2';
 const STORAGE_KEY_PRODUCTS = 'salessnap_products_v2';
 const STORAGE_KEY_KHATA = 'salessnap_khata_v2';
 const STORAGE_KEY_STORE_PROFILE = 'vyaparsnap_store_profile_v2';
+const STORAGE_KEY_TRANSACTIONS = 'salessnap_transactions_v2';
 
 /* ==================== STORE PROFILE ==================== */
 export function loadStoreProfile(): StoreProfile {
@@ -160,15 +161,46 @@ export function settleKhataRecord(id: string): KhataRecord[] {
   return updated;
 }
 
+/* ==================== TRANSACTIONS / ORDER HISTORY ==================== */
+export function loadTransactions(): SaleTransaction[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_TRANSACTIONS);
+    if (!raw) {
+      localStorage.setItem(STORAGE_KEY_TRANSACTIONS, JSON.stringify(INITIAL_TRANSACTIONS));
+      return INITIAL_TRANSACTIONS;
+    }
+    return JSON.parse(raw);
+  } catch (err) {
+    console.error('Error loading transactions', err);
+    return INITIAL_TRANSACTIONS;
+  }
+}
+
+export function saveTransaction(tx: SaleTransaction): SaleTransaction[] {
+  const current = loadTransactions();
+  const updated = [tx, ...current];
+  localStorage.setItem(STORAGE_KEY_TRANSACTIONS, JSON.stringify(updated));
+  return updated;
+}
+
+export function deleteTransaction(transactionId: string): SaleTransaction[] {
+  const current = loadTransactions();
+  const updated = current.filter((t) => t.id !== transactionId);
+  localStorage.setItem(STORAGE_KEY_TRANSACTIONS, JSON.stringify(updated));
+  return updated;
+}
+
 /* ==================== RESET ALL ==================== */
 export function resetToSeedData() {
   localStorage.setItem(STORAGE_KEY_ENTRIES, JSON.stringify(INITIAL_SEED_ENTRIES));
   localStorage.setItem(STORAGE_KEY_PRODUCTS, JSON.stringify(INITIAL_PRODUCTS));
   localStorage.setItem(STORAGE_KEY_KHATA, JSON.stringify(INITIAL_KHATA_RECORDS));
+  localStorage.setItem(STORAGE_KEY_TRANSACTIONS, JSON.stringify(INITIAL_TRANSACTIONS));
   return {
     entries: INITIAL_SEED_ENTRIES,
     products: INITIAL_PRODUCTS,
     khata: INITIAL_KHATA_RECORDS,
+    transactions: INITIAL_TRANSACTIONS,
   };
 }
 
@@ -288,6 +320,7 @@ export interface BackupData {
   entries: Record<string, DailyEntry>;
   products: Product[];
   khata: KhataRecord[];
+  transactions?: SaleTransaction[];
 }
 
 export function exportBackupJSON(): void {
@@ -299,6 +332,7 @@ export function exportBackupJSON(): void {
     entries: loadEntries(),
     products: loadProducts(),
     khata: loadKhata(),
+    transactions: loadTransactions(),
   };
 
   const json = JSON.stringify(data, null, 2);
@@ -317,6 +351,7 @@ export function importBackupJSON(jsonStr: string): {
   entries: Record<string, DailyEntry>;
   products: Product[];
   khata: KhataRecord[];
+  transactions?: SaleTransaction[];
 } {
   const parsed = JSON.parse(jsonStr) as Partial<BackupData>;
   if (!parsed.entries || !parsed.products) {
@@ -331,12 +366,16 @@ export function importBackupJSON(jsonStr: string): {
   if (parsed.profile) {
     localStorage.setItem(STORAGE_KEY_STORE_PROFILE, JSON.stringify(parsed.profile));
   }
+  if (parsed.transactions) {
+    localStorage.setItem(STORAGE_KEY_TRANSACTIONS, JSON.stringify(parsed.transactions));
+  }
 
   return {
     profile: parsed.profile,
     entries: parsed.entries,
     products: parsed.products,
     khata: parsed.khata || [],
+    transactions: parsed.transactions || [],
   };
 }
 
