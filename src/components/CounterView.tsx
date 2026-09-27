@@ -27,11 +27,13 @@ import { formatINR } from '../utils/storage';
 import { playCashRegisterChime, speakSoundboxAnnouncement } from '../utils/audio';
 import { ProductFormModal } from './ProductFormModal';
 import { OrderHistoryModal } from './OrderHistoryModal';
+import { Language, getTranslation } from '../utils/translations';
 
 interface CounterViewProps {
   products: Product[];
   profile: StoreProfile;
   transactions: SaleTransaction[];
+  language?: Language;
   onCompleteSale: (
     total: number,
     mode: 'CASH' | 'UPI' | 'KHATA',
@@ -50,12 +52,14 @@ export const CounterView: React.FC<CounterViewProps> = ({
   products,
   profile,
   transactions,
+  language = 'en',
   onCompleteSale,
   onAddProduct,
   onUpdateProduct,
   onDeleteProduct,
   onVoidTransaction,
 }) => {
+  const isHi = language === 'hi';
   const [cart, setCart] = useState<CartItem[]>([]);
   const [discount, setDiscount] = useState<number>(0);
   const [searchQuery, setSearchQuery] = useState('');
@@ -212,14 +216,16 @@ export const CounterView: React.FC<CounterViewProps> = ({
           <div className="flex items-center gap-2">
             <h2 className="text-xl font-extrabold text-slate-900 font-display flex items-center gap-2">
               <Zap className="w-5 h-5 text-emerald-600 fill-emerald-600" />
-              <span>3-Tap Express Counter</span>
+              <span>{isHi ? '3-टैप सुपरफ़ास्ट काउंटर' : '3-Tap Express Counter'}</span>
             </h2>
             <span className="text-xs font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
               LIVE POS
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
-            Tap items to build basket • 1-tap WhatsApp bill • Auto-stock deduction
+            {isHi
+              ? 'सामान दबाकर टोकन बनाएं • 1-टैप व्हाट्सएप बिल • स्टॉक स्वतः घटेगा'
+              : 'Tap items to build basket • 1-tap WhatsApp bill • Auto-stock deduction'}
           </p>
         </div>
 
@@ -233,7 +239,7 @@ export const CounterView: React.FC<CounterViewProps> = ({
             title="View today's bills, reprint, resend WhatsApp or void sales"
           >
             <Receipt className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Today's Bills ({transactions.length})</span>
+            <span>{isHi ? `आज के बिल (${transactions.length})` : `Today's Bills (${transactions.length})`}</span>
           </button>
 
           {/* Soundbox Toggle */}
@@ -248,7 +254,11 @@ export const CounterView: React.FC<CounterViewProps> = ({
             title="Virtual Hindi/English Soundbox Voice"
           >
             <Volume2 className="w-3.5 h-3.5" />
-            <span>Soundbox: {soundboxEnabled ? 'ON 🔊' : 'OFF 🔇'}</span>
+            <span>
+              {isHi
+                ? `साउंडबॉक्स: ${soundboxEnabled ? 'चालू 🔊' : 'बंद 🔇'}`
+                : `Soundbox: ${soundboxEnabled ? 'ON 🔊' : 'OFF 🔇'}`}
+            </span>
           </button>
         </div>
       </div>
@@ -520,7 +530,7 @@ export const CounterView: React.FC<CounterViewProps> = ({
               <div className="flex items-center gap-2">
                 <ShoppingBag className="w-5 h-5 text-emerald-700" />
                 <h3 className="font-display font-extrabold text-base text-slate-900">
-                  Current Basket ({cart.length})
+                  {isHi ? `वर्तमान बिल टोकन (${cart.length})` : `Current Basket (${cart.length})`}
                 </h3>
               </div>
               {cart.length > 0 && (
@@ -528,7 +538,7 @@ export const CounterView: React.FC<CounterViewProps> = ({
                   onClick={handleClearCart}
                   className="text-xs font-semibold text-rose-600 hover:text-rose-800 flex items-center gap-1"
                 >
-                  <Trash2 className="w-3.5 h-3.5" /> Clear
+                  <Trash2 className="w-3.5 h-3.5" /> {isHi ? 'साफ करें' : 'Clear'}
                 </button>
               )}
             </div>
@@ -538,8 +548,10 @@ export const CounterView: React.FC<CounterViewProps> = ({
               {cart.length === 0 ? (
                 <div className="py-12 text-center text-xs text-slate-400 space-y-1">
                   <span className="text-2xl block">🛒</span>
-                  <p>Counter ticket is empty.</p>
-                  <p className="text-[11px] text-slate-400">Tap items on the left to add.</p>
+                  <p>{isHi ? 'काउंटर टिकट खाली है।' : 'Counter ticket is empty.'}</p>
+                  <p className="text-[11px] text-slate-400">
+                    {isHi ? 'बाईं ओर से सामान दबाकर जोड़ें।' : 'Tap items on the left to add.'}
+                  </p>
                 </div>
               ) : (
                 cart.map((item) => (
@@ -585,7 +597,7 @@ export const CounterView: React.FC<CounterViewProps> = ({
             {grossTotal > 0 && (
               <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/80 space-y-1.5">
                 <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 uppercase">
-                  <span>Cart Subtotal</span>
+                  <span>{isHi ? 'सामान का कुल मूल्य' : 'Cart Subtotal'}</span>
                   <span className="text-slate-800 tabular-nums">₹{grossTotal}</span>
                 </div>
 
@@ -602,13 +614,17 @@ export const CounterView: React.FC<CounterViewProps> = ({
                         }`}
                       >
                         <Percent className="w-3 h-3" />
-                        <span>Round to ₹{suggestedRoundTarget} (-₹{roundDiff})</span>
+                        <span>
+                          {isHi
+                            ? `राउंड ऑफ ₹${suggestedRoundTarget} (-₹${roundDiff})`
+                            : `Round to ₹${suggestedRoundTarget} (-₹${roundDiff})`}
+                        </span>
                       </button>
                     )}
 
                     {discount > 0 && (
                       <span className="text-[11px] font-extrabold text-emerald-800 bg-emerald-100/80 px-2 py-0.5 rounded-md">
-                        Applied -₹{discount}
+                        {isHi ? `छूट: -₹${discount}` : `Applied -₹${discount}`}
                       </span>
                     )}
                   </div>
@@ -619,7 +635,7 @@ export const CounterView: React.FC<CounterViewProps> = ({
                       onClick={() => setDiscount(0)}
                       className="text-[11px] text-rose-600 hover:text-rose-800 font-bold"
                     >
-                      Clear
+                      {isHi ? 'हटाएं' : 'Clear'}
                     </button>
                   )}
                 </div>
@@ -630,21 +646,21 @@ export const CounterView: React.FC<CounterViewProps> = ({
             <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-200 flex items-center justify-between">
               <div>
                 <span className="text-[11px] font-bold uppercase text-emerald-800 block">
-                  Total Payable Amount
+                  {isHi ? 'कुल देय राशि' : 'Total Payable Amount'}
                 </span>
                 <span className="text-3xl font-extrabold font-display text-emerald-950 tabular-nums">
                   {formatINR(totalAmount)}
                 </span>
               </div>
               <span className="bg-emerald-200 text-emerald-900 text-xs font-bold px-2.5 py-1 rounded-full">
-                {cart.reduce((s, i) => s + i.qty, 0)} Items
+                {cart.reduce((s, i) => s + i.qty, 0)} {isHi ? 'सामान' : 'Items'}
               </span>
             </div>
 
             {/* Payment Mode Selector */}
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
-                Payment Channel
+                {isHi ? 'भुगतान का माध्यम' : 'Payment Channel'}
               </label>
               <div className="grid grid-cols-3 gap-2 text-xs font-bold">
                 <button
@@ -657,7 +673,7 @@ export const CounterView: React.FC<CounterViewProps> = ({
                   }`}
                 >
                   <Banknote className="w-4 h-4" />
-                  <span>💵 Cash</span>
+                  <span>{isHi ? '💵 नकद' : '💵 Cash'}</span>
                 </button>
 
                 <button
@@ -673,7 +689,7 @@ export const CounterView: React.FC<CounterViewProps> = ({
                   }`}
                 >
                   <QrCode className="w-4 h-4" />
-                  <span>📱 UPI QR</span>
+                  <span>{isHi ? '📱 यूपीआई QR' : '📱 UPI QR'}</span>
                 </button>
 
                 <button
@@ -686,7 +702,7 @@ export const CounterView: React.FC<CounterViewProps> = ({
                   }`}
                 >
                   <BookOpen className="w-4 h-4" />
-                  <span>📒 Khata / Credit</span>
+                  <span>{isHi ? '📒 उधार खाता' : '📒 Khata / Credit'}</span>
                 </button>
               </div>
             </div>
@@ -698,7 +714,15 @@ export const CounterView: React.FC<CounterViewProps> = ({
                   type="text"
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
-                  placeholder={paymentMode === 'KHATA' ? 'Customer Name (Required)' : 'Customer Name (Optional)'}
+                  placeholder={
+                    isHi
+                      ? paymentMode === 'KHATA'
+                        ? 'ग्राहक का नाम (अनिवार्य)'
+                        : 'ग्राहक का नाम (वैकल्पिक)'
+                      : paymentMode === 'KHATA'
+                      ? 'Customer Name (Required)'
+                      : 'Customer Name (Optional)'
+                  }
                   className={`px-3 py-2 bg-slate-50 border rounded-xl font-medium ${
                     paymentMode === 'KHATA' && !customerName ? 'border-amber-400 bg-amber-50/40' : 'border-slate-200'
                   }`}
@@ -707,7 +731,7 @@ export const CounterView: React.FC<CounterViewProps> = ({
                   type="tel"
                   value={customerPhone}
                   onChange={(e) => setCustomerPhone(e.target.value)}
-                  placeholder="WhatsApp Mobile (Optional)"
+                  placeholder={isHi ? 'व्हाट्सएप मोबाइल नंबर' : 'WhatsApp Mobile (Optional)'}
                   className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium"
                 />
               </div>
@@ -721,7 +745,7 @@ export const CounterView: React.FC<CounterViewProps> = ({
                 onClick={() => executeSale(false)}
                 className="py-3 px-3 bg-slate-100 hover:bg-slate-200 disabled:opacity-40 text-slate-800 rounded-xl text-xs font-bold transition-all active:scale-95"
               >
-                Complete Sale (Done)
+                {isHi ? 'बिक्री पूरी करें (Done)' : 'Complete Sale (Done)'}
               </button>
 
               <button
@@ -731,7 +755,7 @@ export const CounterView: React.FC<CounterViewProps> = ({
                 className="py-3 px-3 bg-emerald-700 hover:bg-emerald-800 disabled:opacity-40 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-md shadow-emerald-900/10 transition-all active:scale-95"
               >
                 <Share2 className="w-3.5 h-3.5 text-emerald-200" />
-                <span>WhatsApp Bill & Save</span>
+                <span>{isHi ? 'व्हाट्सएप पर्ची भेजें व सेव करें' : 'WhatsApp Bill & Save'}</span>
               </button>
             </div>
           </div>

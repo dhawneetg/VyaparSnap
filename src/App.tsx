@@ -11,6 +11,8 @@ import { BottomNav } from './components/BottomNav';
 import { StoreSettingsModal } from './components/StoreSettingsModal';
 import { AuthModal } from './components/AuthModal';
 import { ActiveTab, DailyEntry, Product, KhataRecord, CartItem, StoreProfile, SaleTransaction } from './types';
+import { FlowchartView } from './components/FlowchartView';
+import { Language } from './utils/translations';
 import {
   loadEntries,
   saveEntry,
@@ -43,6 +45,20 @@ export const App: React.FC = () => {
   const [receiptEntry, setReceiptEntry] = useState<DailyEntry | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
+  // Language State: 'en' (English) | 'hi' (Hindi), persisted in localStorage
+  const [language, setLanguage] = useState<Language>(() => {
+    return (localStorage.getItem('vyaparsnap_language') as Language) || 'en';
+  });
+
+  const handleToggleLanguage = () => {
+    setLanguage((prev) => {
+      const next: Language = prev === 'en' ? 'hi' : 'en';
+      localStorage.setItem('vyaparsnap_language', next);
+      showToast(next === 'hi' ? 'भाषा बदलकर हिंदी कर दी गई है 🇮🇳' : 'Switched language to English 🇬🇧');
+      return next;
+    });
+  };
+
   // Store Profile & Modals
   const [storeProfile, setStoreProfile] = useState<StoreProfile>(loadStoreProfile());
   const [isStoreSettingsOpen, setIsStoreSettingsOpen] = useState(false);
@@ -65,7 +81,11 @@ export const App: React.FC = () => {
   const handleSaveStoreProfile = (newProfile: StoreProfile) => {
     const saved = saveStoreProfile(newProfile);
     setStoreProfile(saved);
-    showToast(`Store updated: ${newProfile.storeName}`);
+    showToast(
+      language === 'hi'
+        ? `दुकान प्रोफाइल अपडेट: ${newProfile.storeName}`
+        : `Store updated: ${newProfile.storeName}`
+    );
   };
 
   const handleApplyPresetCatalog = (newProducts: Product[], newProfile: StoreProfile) => {
@@ -73,7 +93,11 @@ export const App: React.FC = () => {
     localStorage.setItem('salessnap_products_v2', JSON.stringify(newProducts));
     const saved = saveStoreProfile(newProfile);
     setStoreProfile(saved);
-    showToast(`Loaded ${newProducts.length} items for ${newProfile.storeName}!`);
+    showToast(
+      language === 'hi'
+        ? `दुकान बदली: ${newProfile.storeName} (${newProducts.length} सामान लोड हुए)!`
+        : `Switched to ${newProfile.storeName} (${newProducts.length} items loaded)!`
+    );
   };
 
   const handleCloudSyncSuccess = (cloudData: {
@@ -325,6 +349,8 @@ export const App: React.FC = () => {
         setActiveTab={setActiveTab}
         isMobilePreview={isMobilePreview}
         setIsMobilePreview={setIsMobilePreview}
+        language={language}
+        onToggleLanguage={handleToggleLanguage}
         onResetData={handleResetData}
         onPrint={() => window.print()}
         lowStockCount={lowStockCount}
@@ -355,6 +381,7 @@ export const App: React.FC = () => {
                     products={products}
                     profile={storeProfile}
                     transactions={transactions}
+                    language={language}
                     onCompleteSale={handleCompleteCounterSale}
                     onAddProduct={handleAddProduct}
                     onUpdateProduct={handleUpdateProduct}
@@ -405,6 +432,9 @@ export const App: React.FC = () => {
                 {activeTab === 'analytics' && (
                   <AnalyticsView stats={stats} entries={entries} />
                 )}
+                {activeTab === 'architecture' && (
+                  <FlowchartView language={language} />
+                )}
               </div>
 
               {/* Mobile Phone Mock Bottom Nav */}
@@ -413,6 +443,7 @@ export const App: React.FC = () => {
                   activeTab={activeTab}
                   setActiveTab={setActiveTab}
                   lowStockCount={lowStockCount}
+                  language={language}
                 />
               </div>
             </div>
@@ -425,6 +456,7 @@ export const App: React.FC = () => {
                 products={products}
                 profile={storeProfile}
                 transactions={transactions}
+                language={language}
                 onCompleteSale={handleCompleteCounterSale}
                 onAddProduct={handleAddProduct}
                 onUpdateProduct={handleUpdateProduct}
@@ -475,6 +507,9 @@ export const App: React.FC = () => {
             {activeTab === 'analytics' && (
               <AnalyticsView stats={stats} entries={entries} />
             )}
+            {activeTab === 'architecture' && (
+              <FlowchartView language={language} />
+            )}
           </div>
         )}
       </main>
@@ -485,6 +520,7 @@ export const App: React.FC = () => {
           activeTab={activeTab}
           setActiveTab={setActiveTab}
           lowStockCount={lowStockCount}
+          language={language}
         />
       )}
 
@@ -501,6 +537,7 @@ export const App: React.FC = () => {
         isOpen={isStoreSettingsOpen}
         onClose={() => setIsStoreSettingsOpen(false)}
         profile={storeProfile}
+        language={language}
         onSaveProfile={handleSaveStoreProfile}
         onApplyPresetCatalog={handleApplyPresetCatalog}
       />

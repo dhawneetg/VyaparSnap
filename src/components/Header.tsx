@@ -17,15 +17,20 @@ import {
   Upload,
   Cloud,
   Settings,
+  Languages,
+  Workflow,
 } from 'lucide-react';
 import { ActiveTab, DailyEntry, Product, KhataRecord, StoreProfile } from '../types';
 import { exportBackupJSON, importBackupJSON } from '../utils/storage';
+import { Language, getTranslation } from '../utils/translations';
 
 interface HeaderProps {
   activeTab: ActiveTab;
   setActiveTab: (tab: ActiveTab) => void;
   isMobilePreview: boolean;
   setIsMobilePreview: (val: boolean) => void;
+  language: Language;
+  onToggleLanguage: () => void;
   onResetData: () => void;
   onPrint: () => void;
   lowStockCount: number;
@@ -46,6 +51,8 @@ export const Header: React.FC<HeaderProps> = ({
   setActiveTab,
   isMobilePreview,
   setIsMobilePreview,
+  language,
+  onToggleLanguage,
   onResetData,
   onPrint,
   lowStockCount,
@@ -128,26 +135,26 @@ export const Header: React.FC<HeaderProps> = ({
         <nav className="hidden lg:flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
           <button
             onClick={() => setActiveTab('counter')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all ${
+            className={`px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all ${
               activeTab === 'counter'
                 ? 'bg-white text-emerald-800 shadow-sm'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             <Zap className="w-3.5 h-3.5 text-emerald-600" />
-            <span>3-Tap Counter</span>
+            <span>{getTranslation('counterTab', language)}</span>
           </button>
 
           <button
             onClick={() => setActiveTab('stock')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all relative ${
+            className={`px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all relative ${
               activeTab === 'stock'
                 ? 'bg-white text-emerald-800 shadow-sm'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             <Boxes className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Stock Ledger</span>
+            <span>{getTranslation('stockTab', language)}</span>
             {lowStockCount > 0 && (
               <span className="bg-rose-500 text-white text-[9px] font-extrabold w-4 h-4 rounded-full flex items-center justify-center">
                 {lowStockCount}
@@ -157,14 +164,14 @@ export const Header: React.FC<HeaderProps> = ({
 
           <button
             onClick={() => setActiveTab('khata')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all relative ${
+            className={`px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all relative ${
               activeTab === 'khata'
                 ? 'bg-white text-emerald-800 shadow-sm'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             <BookOpen className="w-3.5 h-3.5 text-amber-600" />
-            <span>Khata (उधार)</span>
+            <span>{getTranslation('khataTab', language)}</span>
             {pendingKhataCount > 0 && (
               <span className="bg-amber-500 text-white text-[9px] font-extrabold w-4 h-4 rounded-full flex items-center justify-center">
                 {pendingKhataCount}
@@ -174,43 +181,66 @@ export const Header: React.FC<HeaderProps> = ({
 
           <button
             onClick={() => setActiveTab('entry')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all ${
+            className={`px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all ${
               activeTab === 'entry'
                 ? 'bg-white text-emerald-800 shadow-sm'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             <FileText className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Daily Closing</span>
+            <span>{getTranslation('dailyClosingTab', language)}</span>
           </button>
 
           <button
             onClick={() => setActiveTab('calendar')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all ${
+            className={`px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all ${
               activeTab === 'calendar'
                 ? 'bg-white text-emerald-800 shadow-sm'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             <CalendarIcon className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Calendar</span>
+            <span>{getTranslation('calendarTab', language)}</span>
           </button>
 
           <button
             onClick={() => setActiveTab('analytics')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all ${
+            className={`px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all ${
               activeTab === 'analytics'
                 ? 'bg-white text-emerald-800 shadow-sm'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             <BarChart3 className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Analytics</span>
+            <span>{getTranslation('analyticsTab', language)}</span>
+          </button>
+
+          {/* Architecture & Flowchart Tab */}
+          <button
+            onClick={() => setActiveTab('architecture')}
+            className={`px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all ${
+              activeTab === 'architecture'
+                ? 'bg-white text-emerald-800 shadow-sm'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <Workflow className="w-3.5 h-3.5 text-indigo-600" />
+            <span>{getTranslation('architectureTab', language)}</span>
           </button>
         </nav>
 
         {/* Right: Controls & Actions */}
         <div className="flex items-center gap-2">
+          {/* Functional English <-> Hindi Switcher Pill */}
+          <button
+            onClick={onToggleLanguage}
+            className="flex items-center gap-1 px-2.5 py-1.5 bg-gradient-to-r from-amber-50 to-orange-50 hover:from-amber-100 hover:to-orange-100 text-amber-950 rounded-lg border border-amber-300 text-xs font-extrabold transition-all shadow-xs active:scale-95 cursor-pointer"
+            title={language === 'en' ? 'हिंदी में बदलें (Switch to Hindi)' : 'Switch to English'}
+          >
+            <Languages className="w-3.5 h-3.5 text-amber-700" />
+            <span>{language === 'en' ? '🇮🇳 हिंदी' : '🇬🇧 English'}</span>
+          </button>
+
           {/* Cloud Sync Button */}
           <button
             onClick={onOpenAuthModal}
@@ -218,7 +248,7 @@ export const Header: React.FC<HeaderProps> = ({
             title="Multi-Device Cloud Sync via Supabase"
           >
             <Cloud className="w-3.5 h-3.5 text-emerald-600" />
-            <span className="hidden sm:inline">Cloud Sync</span>
+            <span className="hidden sm:inline">{getTranslation('cloudSync', language)}</span>
           </button>
 
           {/* Backup JSON */}

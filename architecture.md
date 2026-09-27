@@ -298,3 +298,38 @@ To eliminate vendor technical friction, VyaparSnap operates on a **Single Centra
 * **Tier 1 (Local):** Instant synchronous writes to `localStorage` and `IndexedDB`.
 * **Tier 2 (Cloud):** Asynchronous upserts to the central Supabase backend when online.
 
+---
+
+## 7. Archify Runtime Architecture & Algorithm Blueprint
+
+VyaparSnap embeds an interactive **Architecture Blueprint & Algorithm Flowchart** directly in the UI (`/architecture` tab via `FlowchartView.tsx`).
+
+### 7.1. Trust & Execution Boundaries
+1. **Offline Client Edge Sandbox:** All UI threads, touch events, state dispatches, and local persistence run inside the device sandbox without external network calls.
+2. **NPCI UPI Rail:** Bank-grade cryptographic payment boundary. Encoded UPI intent strings trigger native merchant apps (GPay, PhonePe, Paytm).
+3. **WhatsApp Deep-Link Rail:** External messaging boundary. Emits pre-formatted UTF-8 slips through WhatsApp protocol handlers (`whatsapp://send`).
+4. **Supabase Central Cloud Database:** Cryptographically isolated multitenant PostgreSQL backend with Row-Level Security (RLS).
+
+### 7.2. 7-Step Zero-Latency Primary Runtime Path
+1. **Rapid Grid Tap:** POS touch surface dispatches item addition to cart.
+2. **Cart Context Dispatch:** Memory state manager increments quantity and computes subtotal.
+3. **Checkout Mode Selection:** Cash, UPI, or Khata payment method triggered.
+4. **Atomic Local Storage Commit:** Writes transaction record, updates daily ledger, and decrements stock.
+5. **Virtual Soundbox Acoustic Synthesis:** Web Audio API synthesizes confirmation chime and Hindi/English speech receipt.
+6. **Slip Generation & Dispatch:** Generates thermal 58mm/80mm receipt and WhatsApp message payload.
+7. **Cloud Sync Worker (Deferred Async):** Background service syncs payload to Supabase PostgreSQL when connectivity is established.
+
+### 7.3. 12 Core System Components
+* `Catalog Grid POS (Touch UI)`
+* `Cart & Calculation Engine`
+* `Payment Modal & Keypad`
+* `Dynamic UPI QR Engine`
+* `Web Audio Virtual Soundbox`
+* `WhatsApp Protocol Dispatcher`
+* `Thermal & Wholesale Slip Engine`
+* `Stock & Traffic-Light Ledger`
+* `Khata Credit & Debt Ledger`
+* `Day P&L Aggregator`
+* `Client Local Storage Tier`
+* `Supabase RLS Cloud Worker`
+

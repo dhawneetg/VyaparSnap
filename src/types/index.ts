@@ -83,7 +83,7 @@ export interface DailyEntry {
   updatedAt?: string;
 }
 
-export type ActiveTab = 'counter' | 'stock' | 'khata' | 'entry' | 'calendar' | 'analytics';
+export type ActiveTab = 'counter' | 'stock' | 'khata' | 'entry' | 'calendar' | 'analytics' | 'architecture';
 
 export interface MonthlyStats {
   totalSales: number;
