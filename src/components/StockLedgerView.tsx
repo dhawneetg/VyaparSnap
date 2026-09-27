@@ -11,34 +11,32 @@ import {
   PackagePlus,
   X,
   Sparkles,
+  Edit2,
+  Trash2,
 } from 'lucide-react';
 import { Product } from '../types';
 import { formatINR } from '../utils/storage';
-import { getSmartIcon, POPULAR_CATEGORY_ICONS } from '../utils/smartIcons';
+import { ProductFormModal } from './ProductFormModal';
 
 interface StockLedgerViewProps {
   products: Product[];
   onUpdateStock: (productId: string, delta: number) => void;
   onAddProduct: (product: Product) => void;
+  onUpdateProduct: (product: Product) => void;
+  onDeleteProduct: (productId: string) => void;
 }
 
 export const StockLedgerView: React.FC<StockLedgerViewProps> = ({
   products,
   onUpdateStock,
   onAddProduct,
+  onUpdateProduct,
+  onDeleteProduct,
 }) => {
   const [filterState, setFilterState] = useState<'ALL' | 'RED' | 'YELLOW' | 'GREEN'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-
-  // New product form state
-  const [newTitle, setNewTitle] = useState('');
-  const [newPrice, setNewPrice] = useState<number | ''>('');
-  const [newStock, setNewStock] = useState<number | ''>('');
-  const [newCategory, setNewCategory] = useState<string>('General Items');
-  const [newUnit, setNewUnit] = useState('pack');
-  const [newIcon, setNewIcon] = useState('📦');
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
   // Derive active categories from existing catalog
   const existingCategories = Array.from(new Set(products.map((p) => p.category))).filter(Boolean);
@@ -57,28 +55,6 @@ export const StockLedgerView: React.FC<StockLedgerViewProps> = ({
     return true;
   });
 
-  const handleCreateProduct = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newTitle.trim() || !newPrice) return;
-
-    const created: Product = {
-      id: `prod-${Date.now()}`,
-      name: newTitle.trim(),
-      price: Number(newPrice),
-      stockQty: Number(newStock) || 0,
-      category: newCategory,
-      unit: newUnit,
-      icon: newIcon || '📦',
-      isFrequent: false,
-    };
-
-    onAddProduct(created);
-    setIsAddModalOpen(false);
-    setNewTitle('');
-    setNewPrice('');
-    setNewStock('');
-  };
-
   return (
     <div className="w-full max-w-5xl mx-auto px-4 py-6 space-y-6 animate-slide-up">
       {/* Top Banner */}
@@ -94,12 +70,15 @@ export const StockLedgerView: React.FC<StockLedgerViewProps> = ({
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
-            Color-coded shelf monitor • 1-tap preset restock • Auto-decrement on counter sale
+            Color-coded shelf monitor • 1-tap preset restock • Edit & Delete items • Auto-decrement on counter sale
           </p>
         </div>
 
         <button
-          onClick={() => setIsAddModalOpen(true)}
+          onClick={() => {
+            setEditingProduct(null);
+            setIsProductModalOpen(true);
+          }}
           className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold shadow-sm shadow-emerald-900/10 transition-all active:scale-95"
         >
           <PackagePlus className="w-4 h-4 text-emerald-200" />
@@ -279,6 +258,35 @@ export const StockLedgerView: React.FC<StockLedgerViewProps> = ({
                   >
                     -1
                   </button>
+
+                  <div className="h-5 w-[1px] bg-slate-200 mx-1 hidden sm:block"></div>
+
+                  {/* Edit Product Button */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingProduct(p);
+                      setIsProductModalOpen(true);
+                    }}
+                    className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition-colors"
+                    title="Edit Item Details (सामान बदलें)"
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                  </button>
+
+                  {/* Delete Product Button */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (window.confirm(`Delete "${p.name}" from your catalog?\n\n(क्या आप "${p.name}" को दुकान से हटाना चाहते हैं?)`)) {
+                        onDeleteProduct(p.id);
+                      }
+                    }}
+                    className="p-1.5 rounded-lg border border-rose-200 hover:bg-rose-50 text-rose-500 hover:text-rose-700 transition-colors"
+                    title="Delete Item from Shop (सामान हटाएं)"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </div>
             </div>
@@ -286,175 +294,24 @@ export const StockLedgerView: React.FC<StockLedgerViewProps> = ({
         })}
       </div>
 
-      {/* Modal: Add New Product */}
-      {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full border border-slate-200 shadow-2xl space-y-4 animate-slide-up">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="font-display font-extrabold text-base text-slate-900">
-                Add Inventory Product (नया सामान जोड़ें)
-              </h3>
-              <button
-                onClick={() => setIsAddModalOpen(false)}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-700"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateProduct} className="space-y-3 text-xs">
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">Product Title</label>
-                <input
-                  type="text"
-                  required
-                  value={newTitle}
-                  onChange={(e) => {
-                    const title = e.target.value;
-                    setNewTitle(title);
-                    const autoDetected = getSmartIcon(title, newCategory);
-                    setNewIcon(autoDetected);
-                  }}
-                  placeholder="e.g. Pani Puri Plate, Aadhaar PVC Card, Chocolate Cake..."
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                />
-              </div>
-
-              {/* Live Smart Icon Detection Banner */}
-              <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl p-1 bg-white rounded-lg border border-slate-200 shadow-xs">
-                    {newIcon}
-                  </span>
-                  <div>
-                    <span className="text-[11px] font-bold text-slate-800 flex items-center gap-1">
-                      <Sparkles className="w-3 h-3 text-amber-500" />
-                      <span>Smart Icon Auto-Detected</span>
-                    </span>
-                    <span className="text-[10px] text-slate-500">
-                      Matches "{newTitle || 'item'}" automatically
-                    </span>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                  className="text-[11px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-lg border border-emerald-200 transition-colors"
-                >
-                  {showEmojiPicker ? 'Close Picker ✕' : 'Change Icon 🎨'}
-                </button>
-              </div>
-
-              {/* Emoji Catalog Picker Drawer */}
-              {showEmojiPicker && (
-                <div className="p-3 bg-white border border-slate-200 rounded-xl space-y-2 max-h-40 overflow-y-auto animate-slide-up">
-                  {Object.entries(POPULAR_CATEGORY_ICONS).map(([catTitle, emojis]) => (
-                    <div key={catTitle}>
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                        {catTitle}
-                      </span>
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        {emojis.map((emoji) => (
-                          <button
-                            key={emoji}
-                            type="button"
-                            onClick={() => {
-                              setNewIcon(emoji);
-                              setShowEmojiPicker(false);
-                            }}
-                            className={`text-lg p-1.5 rounded-lg border hover:bg-slate-100 transition-all ${
-                              newIcon === emoji ? 'border-emerald-600 bg-emerald-50 shadow-xs' : 'border-slate-200'
-                            }`}
-                          >
-                            {emoji}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">Selling Price (₹)</label>
-                  <input
-                    type="number"
-                    required
-                    value={newPrice}
-                    onChange={(e) => setNewPrice(Number(e.target.value))}
-                    placeholder="₹ 50"
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">Initial Stock Count</label>
-                  <input
-                    type="number"
-                    value={newStock}
-                    onChange={(e) => setNewStock(Number(e.target.value))}
-                    placeholder="e.g. 20"
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">Category</label>
-                  <input
-                    type="text"
-                    list="category-suggestions"
-                    value={newCategory}
-                    onChange={(e) => {
-                      const cat = e.target.value;
-                      setNewCategory(cat);
-                      if (newTitle) {
-                        setNewIcon(getSmartIcon(newTitle, cat));
-                      }
-                    }}
-                    placeholder="Select or type..."
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  />
-                  <datalist id="category-suggestions">
-                    {categoriesList.map((c) => (
-                      <option key={c} value={c} />
-                    ))}
-                  </datalist>
-                </div>
-
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">Unit of Measure</label>
-                  <input
-                    type="text"
-                    value={newUnit}
-                    onChange={(e) => setNewUnit(e.target.value)}
-                    placeholder="plate, pack, pc, kg"
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  />
-                </div>
-              </div>
-
-              <div className="pt-3 flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsAddModalOpen(false)}
-                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl font-bold shadow-sm"
-                >
-                  Save Product
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {/* Product Form Modal (Add / Edit / Delete) */}
+      <ProductFormModal
+        isOpen={isProductModalOpen}
+        onClose={() => {
+          setIsProductModalOpen(false);
+          setEditingProduct(null);
+        }}
+        product={editingProduct}
+        existingCategories={categoriesList}
+        onSave={(savedProd) => {
+          if (editingProduct) {
+            onUpdateProduct(savedProd);
+          } else {
+            onAddProduct(savedProd);
+          }
+        }}
+        onDelete={onDeleteProduct}
+      />
     </div>
   );
 };

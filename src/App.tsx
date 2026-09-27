@@ -17,6 +17,7 @@ import {
   deleteEntry,
   loadProducts,
   saveProduct,
+  deleteProduct,
   updateStockQuantity,
   decrementStockOnSale,
   loadKhata,
@@ -192,6 +193,19 @@ export const App: React.FC = () => {
     showToast(`Added ${newProd.name} to inventory!`);
   };
 
+  const handleUpdateProduct = (updatedProd: Product) => {
+    const updated = saveProduct(updatedProd);
+    setProducts(updated);
+    showToast(`Updated ${updatedProd.name}!`);
+  };
+
+  const handleDeleteProduct = (productId: string) => {
+    const target = products.find((p) => p.id === productId);
+    const updated = deleteProduct(productId);
+    setProducts(updated);
+    showToast(`Deleted ${target?.name || 'item'} from catalog.`);
+  };
+
   // Khata settlements
   const handleSettleKhata = (id: string) => {
     const updated = settleKhataRecord(id);
@@ -266,6 +280,9 @@ export const App: React.FC = () => {
                     products={products}
                     profile={storeProfile}
                     onCompleteSale={handleCompleteCounterSale}
+                    onAddProduct={handleAddProduct}
+                    onUpdateProduct={handleUpdateProduct}
+                    onDeleteProduct={handleDeleteProduct}
                   />
                 )}
                 {activeTab === 'stock' && (
@@ -273,6 +290,8 @@ export const App: React.FC = () => {
                     products={products}
                     onUpdateStock={handleUpdateStock}
                     onAddProduct={handleAddProduct}
+                    onUpdateProduct={handleUpdateProduct}
+                    onDeleteProduct={handleDeleteProduct}
                   />
                 )}
                 {activeTab === 'khata' && (
@@ -328,6 +347,9 @@ export const App: React.FC = () => {
                 products={products}
                 profile={storeProfile}
                 onCompleteSale={handleCompleteCounterSale}
+                onAddProduct={handleAddProduct}
+                onUpdateProduct={handleUpdateProduct}
+                onDeleteProduct={handleDeleteProduct}
               />
             )}
             {activeTab === 'stock' && (
@@ -335,6 +357,8 @@ export const App: React.FC = () => {
                 products={products}
                 onUpdateStock={handleUpdateStock}
                 onAddProduct={handleAddProduct}
+                onUpdateProduct={handleUpdateProduct}
+                onDeleteProduct={handleDeleteProduct}
               />
             )}
             {activeTab === 'khata' && (

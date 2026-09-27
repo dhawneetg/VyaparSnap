@@ -15,12 +15,15 @@ import {
   Sparkles,
   Calculator,
   Delete,
+  Edit2,
+  PackagePlus,
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import confetti from 'canvas-confetti';
 import { Product, CartItem, StoreProfile } from '../types';
 import { formatINR } from '../utils/storage';
 import { playCashRegisterChime, speakSoundboxAnnouncement } from '../utils/audio';
+import { ProductFormModal } from './ProductFormModal';
 
 interface CounterViewProps {
   products: Product[];
@@ -32,9 +35,19 @@ interface CounterViewProps {
     customerName?: string,
     customerPhone?: string
   ) => void;
+  onAddProduct: (product: Product) => void;
+  onUpdateProduct: (product: Product) => void;
+  onDeleteProduct: (productId: string) => void;
 }
 
-export const CounterView: React.FC<CounterViewProps> = ({ products, profile, onCompleteSale }) => {
+export const CounterView: React.FC<CounterViewProps> = ({
+  products,
+  profile,
+  onCompleteSale,
+  onAddProduct,
+  onUpdateProduct,
+  onDeleteProduct,
+}) => {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
@@ -45,6 +58,10 @@ export const CounterView: React.FC<CounterViewProps> = ({ products, profile, onC
   const [showUpiQrModal, setShowUpiQrModal] = useState(false);
   const [soundboxEnabled, setSoundboxEnabled] = useState(true);
   const [showKeypad, setShowKeypad] = useState(false);
+
+  // Add / Edit Product Modal state
+  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
   const handleKeypadPress = (val: string) => {
     if (val === 'CLEAR') {
@@ -216,70 +233,124 @@ export const CounterView: React.FC<CounterViewProps> = ({ products, profile, onC
               />
             </div>
 
-            {/* Category Pills */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
-              {categories.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setSelectedCategory(cat)}
-                  className={`px-3 py-1.5 rounded-lg font-bold whitespace-nowrap transition-all ${
-                    selectedCategory === cat
-                      ? 'bg-emerald-700 text-white shadow-sm'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
+            {/* Category Pills & Add Item Button */}
+            <div className="flex items-center justify-between gap-2 overflow-x-auto pb-1 text-xs">
+              <div className="flex items-center gap-1.5 overflow-x-auto">
+                {categories.map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => setSelectedCategory(cat)}
+                    className={`px-3 py-1.5 rounded-lg font-bold whitespace-nowrap transition-all ${
+                      selectedCategory === cat
+                        ? 'bg-emerald-700 text-white shadow-sm'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+
+              {/* Direct Add Product Trigger on Counter */}
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingProduct(null);
+                  setIsProductModalOpen(true);
+                }}
+                className="flex items-center gap-1 px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg font-bold whitespace-nowrap shadow-xs text-xs transition-all active:scale-95 shrink-0"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>+ Add Item (सामान जोड़ें)</span>
+              </button>
             </div>
           </div>
 
           {/* Product Cards Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {/* Quick Add Product Dashed Tile */}
+            <div
+              onClick={() => {
+                setEditingProduct(null);
+                setIsProductModalOpen(true);
+              }}
+              className="p-3 rounded-2xl border-2 border-dashed border-emerald-300 hover:border-emerald-500 bg-emerald-50/40 hover:bg-emerald-50 text-emerald-800 flex flex-col items-center justify-center text-center cursor-pointer transition-all min-h-[110px] group active:scale-95 shadow-xs"
+            >
+              <div className="w-8 h-8 rounded-full bg-emerald-100 group-hover:bg-emerald-200 flex items-center justify-center text-emerald-800 mb-1 transition-colors">
+                <Plus className="w-4 h-4" />
+              </div>
+              <span className="font-extrabold text-xs text-emerald-950">+ Add Item</span>
+              <span className="text-[10px] text-emerald-700 font-semibold">नया सामान जोड़ें</span>
+            </div>
+
             {filteredProducts.map((p) => {
               const isOutOfStock = p.stockQty === 0;
               const isLowStock = p.stockQty > 0 && p.stockQty < 10;
 
               return (
-                <button
+                <div
                   key={p.id}
-                  disabled={isOutOfStock}
-                  onClick={() => handleAddItem(p)}
-                  className={`p-3 rounded-2xl border text-left flex flex-col justify-between transition-all active:scale-95 ${
+                  className={`group relative p-3 rounded-2xl border text-left flex flex-col justify-between transition-all select-none ${
                     isOutOfStock
-                      ? 'bg-slate-100 border-slate-200 opacity-50 cursor-not-allowed'
+                      ? 'bg-slate-100 border-slate-200 opacity-60'
                       : 'bg-white border-slate-200 hover:border-emerald-400 hover:shadow-md'
                   }`}
                 >
                   <div>
                     <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-2xl">{p.icon}</span>
                       <span
-                        className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${
-                          isOutOfStock
-                            ? 'bg-rose-100 text-rose-800'
-                            : isLowStock
-                            ? 'bg-amber-100 text-amber-800'
-                            : 'bg-emerald-100 text-emerald-800'
-                        }`}
+                        className="text-2xl cursor-pointer active:scale-110 transition-transform"
+                        onClick={() => !isOutOfStock && handleAddItem(p)}
                       >
-                        {p.stockQty} {p.unit}
+                        {p.icon}
                       </span>
+                      <div className="flex items-center gap-1">
+                        <span
+                          className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${
+                            isOutOfStock
+                              ? 'bg-rose-100 text-rose-800'
+                              : isLowStock
+                              ? 'bg-amber-100 text-amber-800'
+                              : 'bg-emerald-100 text-emerald-800'
+                          }`}
+                        >
+                          {p.stockQty} {p.unit}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingProduct(p);
+                            setIsProductModalOpen(true);
+                          }}
+                          className="p-1 rounded-md text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition-colors"
+                          title="Edit price/name or delete item (सामान बदलें/हटाएं)"
+                        >
+                          <Edit2 className="w-3 h-3" />
+                        </button>
+                      </div>
                     </div>
-                    <div className="font-bold text-xs text-slate-900 line-clamp-2 leading-tight">
+
+                    <div
+                      onClick={() => !isOutOfStock && handleAddItem(p)}
+                      className="font-bold text-xs text-slate-900 line-clamp-2 leading-tight cursor-pointer hover:text-emerald-800"
+                    >
                       {p.name}
                     </div>
                   </div>
 
-                  <div className="mt-3 flex items-center justify-between">
+                  <div
+                    onClick={() => !isOutOfStock && handleAddItem(p)}
+                    className="mt-3 flex items-center justify-between cursor-pointer pt-1"
+                  >
                     <span className="text-base font-extrabold text-emerald-800 font-display tabular-nums">
                       ₹{p.price}
                     </span>
-                    <span className="w-6 h-6 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-sm">
+                    <span className="w-6 h-6 rounded-lg bg-emerald-50 text-emerald-700 group-hover:bg-emerald-600 group-hover:text-white flex items-center justify-center font-bold text-sm transition-colors">
                       +
                     </span>
                   </div>
-                </button>
+                </div>
               );
             })}
           </div>
@@ -632,6 +703,25 @@ export const CounterView: React.FC<CounterViewProps> = ({ products, profile, onC
           </div>
         </div>
       )}
+
+      {/* Add / Edit Product Modal */}
+      <ProductFormModal
+        isOpen={isProductModalOpen}
+        onClose={() => {
+          setIsProductModalOpen(false);
+          setEditingProduct(null);
+        }}
+        product={editingProduct}
+        existingCategories={categories.filter((c) => c !== 'All')}
+        onSave={(savedProd) => {
+          if (editingProduct) {
+            onUpdateProduct(savedProd);
+          } else {
+            onAddProduct(savedProd);
+          }
+        }}
+        onDelete={onDeleteProduct}
+      />
     </div>
   );
 };

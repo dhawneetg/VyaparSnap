@@ -91,6 +91,13 @@ export function saveProduct(product: Product): Product[] {
   return updated;
 }
 
+export function deleteProduct(productId: string): Product[] {
+  const current = loadProducts();
+  const updated = current.filter((p) => p.id !== productId);
+  localStorage.setItem(STORAGE_KEY_PRODUCTS, JSON.stringify(updated));
+  return updated;
+}
+
 export function updateStockQuantity(productId: string, delta: number): Product[] {
   const current = loadProducts();
   const updated = current.map((p) => {
